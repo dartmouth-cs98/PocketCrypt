@@ -7,7 +7,7 @@ def saveKey( fs ):
 	key = Fernet.generate_key()
 
 	# check if key already exists
-	if fs.getData( "key" ):
+	if fs.getValue( "key" ):
 		cfrm = input( "Key already exists! Overwrite? (Y/n)\n" )
 		if str.lower( cfrm ) == "y":
 			fs.writeData( { "key": key.decode() } )
