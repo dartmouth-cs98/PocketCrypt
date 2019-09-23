@@ -1,7 +1,7 @@
 CS 98 Hack 1
 
 ### Tutorials Followed
-- nitratine.net/blog/post/encryption-and-decryption-in-python/
+- https://nitratine.net/blog/post/encryption-and-decryption-in-python/
 
 ### Other Resources
 - cryptography.io

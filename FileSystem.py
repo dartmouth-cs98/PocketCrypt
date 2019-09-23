@@ -51,5 +51,17 @@ class FileSystem:
 
 	def getValue( self, key ):
 		return self.data[ key ]
-		
+	
+
+	def addFile( self, addr ):
+
+		# manipulate local data
+		if self.data[ 'files' ]:
+			self.data[ 'files' ].append( addr )
+		else:
+			self.data[ 'files' ] = ()
+
+		# save changes
+		self.updateFileData()
+
 
