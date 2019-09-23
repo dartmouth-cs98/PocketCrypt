@@ -1,19 +1,23 @@
 from FileSystem import FileSystem
 from cryptography.fernet import Fernet
 
-# def saveKey():
-# 		# generate a random key
-# 		key = Fernet.generate_key()
 
-# 		# save the key
-# 		created = writeData( "key", key )
+def saveKey( fs ):
+	# generate a random key
+	key = Fernet.generate_key()
 
-# 		if created:
-# 			print( "Key created!" )
-# 		else:
-# 			print( "Key overwritten!" )
+	# check if key already exists
+	if fs.getData( "key" ):
+		cfrm = input( "Key already exists! Overwrite? (Y/n)\n" )
+		if str.lower( cfrm ) == "y":
+			fs.writeData( { "key": key.decode() } )
+			print( "Key overwritten." )
+		else:
+			print( "Operation aborted." )
+	return key
 
 
 fs = FileSystem( "metadata.json" )
 
-fs.writeData( { "testKey1": "testValue1", "testKey2": { "testValue22": 22 } } )
+saveKey( fs )
+
