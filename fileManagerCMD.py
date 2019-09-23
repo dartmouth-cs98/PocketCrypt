@@ -1,4 +1,4 @@
-from FileSystem import FileSystem
+from FSManager import FSManager
 from cryptography.fernet import Fernet
 
 
@@ -17,7 +17,13 @@ def saveKey( fs ):
 	return key
 
 
-fs = FileSystem( "metadata.json" )
+FSManager = FSManager( "metadata.json" )
 
-saveKey( fs )
+FSManager.loadFileSystem( "myFileSystem" )
+
+FSManager.addFileToSystem( 'myFileSystem', "myFile.txt")
+
+
+
+
 

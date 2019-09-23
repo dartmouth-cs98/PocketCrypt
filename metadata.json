@@ -1,3 +1,9 @@
 {
-   "key": "3Sq3zpub2NjjxgN0RsXwlRMteOBe-Xcnxp1d2JU_KDk="
+   "myFileSystem": {
+      "key": "3Sq3zpub2NjjxgN0RsXwlRMteOBe-Xcnxp1d2JU_KDk=",
+      "files": [
+         "item3.txt",
+         "myFile.txt"
+      ]
+   }
 }
