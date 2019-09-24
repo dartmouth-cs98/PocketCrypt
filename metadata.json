@@ -1,16 +1,6 @@
 {
-   "myOldFileSystem": {
-      "key": "v2V4UclRNdF1tTnsJAcnqaXiK2AAYO0nE3bgb-sudLI=",
-      "files": [
-         "myFile.txt"
-      ]
-   },
-   "myOldFileSystem2": {
-      "key": "qfBT3yTNr-n-6-odTXRiYF-8BKuid2VVtiXn2iTbVy4=",
-      "files": []
-   },
-   "myNewFileSystem": {
-      "key": "uGZwz3POg55tgPyjTYPn12Oz89GkdUyh08fhLfPTo-I=",
+   "myFileSystem": {
+      "key": "aVEU6Kt1fWVeCGr9xnQKfivBc0BoNv_kucfrl2A7wtk=",
       "files": []
    }
 }

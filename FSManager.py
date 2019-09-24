@@ -11,11 +11,34 @@ class FSManager:
 
 	
 	def importMetadata( self ):
-		empty = not os.path.exists( self.metadataAddr ) or os.stat( self.metadataAddr ).st_size == 0
-		if empty: # protect from JSON decoding empty file
-			return None
+		# check metadata file exists
+		exists = os.path.exists( self.metadataAddr )
+		if not exists:
+			cfrm = input( "Unable to locate metadata file '{}'. Create one? (Y/n)\n".format( self.metadataAddr ) )
+			if str.lower( cfrm ) != "y":
+				print( "Operation aborted." )
+				return
+			try:
+				data_file = open( self.metadataAddr, "w" )
+				data_file.close()
+			except IOError:
+				print ( "Unable to create metadata file." )
+				return None
+		
+		# check metadata file has content to protect from JSON errors
+		if os.stat( self.metadataAddr ).st_size == 0:
+			if exists:
+				print( "Initializing metadata file." )
+			try:
+				data_file = open( self.metadataAddr, "w" )
+			except IOError:
+				print ( "Unable to initialize metadata file." )
+				return None
+			with data_file:
+				data_file.write( "{}" )
+
 		try:
-			data_file = open( "metadata.json", "r+" )
+			data_file = open( self.metadataAddr, "r+" )
 		except IOError:
 			print ( "Unable to read metadata." )
 			return None
@@ -38,7 +61,7 @@ class FSManager:
 
 		# import metadata
 		dataJSON = self.importMetadata()
-		if not dataJSON:
+		if dataJSON is None:
 			print( "Unable to import metadata." )
 			return
 
@@ -71,7 +94,7 @@ class FSManager:
 
 		# grab all systems from metadata file
 		dataObj = self.importMetadata()
-		if not dataObj:
+		if dataObj is None:
 			print( "Can't save, unable to import metadata." )
 			return
 
@@ -88,14 +111,14 @@ class FSManager:
 		for fs, data in serLocalSystems.items():
 			dataObj[ fs ] = data
 
-		# overwrite metadata file, preserve existing un-loaded systems
+		# overwrite metadata file
 		with open( self.metadataAddr, "w" ) as data_file:
 			data_file.write( json.dumps( dataObj, indent=3 ) )
 
 		print( "Systems saved." )
 
 
-	# updates the metadata file with each key-value pair given in dict
+	# add a file address to a given system
 	def addFileToSystem( self, fsName, addr ):
 		self.systems[ fsName ].addFile( addr )
 

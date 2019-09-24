@@ -19,11 +19,12 @@ def saveKey( fs ):
 
 FSManager = FSManager( "metadata.json" )
 
-FSManager.loadFileSystem( "myOldFileSystem" )
 
-FSManager.addFileToSystem( 'myOldFileSystem', "myFile.txt")
+FSManager.loadFileSystem( "myFileSystem" )
+# FSManager.addFileToSystem( 'myOldFileSystem', "myFile.txt")
+# FSManager.loadFileSystem( "myNewFileSystem" )
 
-FSManager.loadFileSystem( "myNewFileSystem" )
+# FSManager.commitFileSystem( )
 
 FSManager.saveSystems()
 
