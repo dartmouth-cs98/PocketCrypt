@@ -215,7 +215,7 @@ class FSManager:
 
 				# write encrypted binary to shadow file in crypt
 				with open( "crypt/{}".format( uuid ), "wb+") as cryptFile:
-					cryptFile.write(encryptedBData)
+					cryptFile.write( encryptedBData )
 
 				# take timestamp and record encryption time in seconds
 				self.data[ 'systems' ][ fsName ][ 'files' ][ fAddr ][ 'time' ] = round( time.time() )
@@ -255,4 +255,39 @@ class FSManager:
 			self.updateFileSystem( fsName )
 			time.sleep( 1 )
 			
-	
+	# import a filesystem from crypt
+	def importFileSystem( self, fsName ):
+		# import all metadata
+		self.data = self.importMetadata()
+		if self.data is None:
+			print( "Unable to update file systems, couldn't import metadata." )
+			return
+		
+		# identify files in filesystem
+		files = self.data[ 'systems' ][ fsName ][ 'files' ]
+		key = self.data[ 'systems' ][ fsName ][ 'key' ]
+		for fileName, fileData in files.items():
+			uuid = fileData[ 'uuid' ]
+			print( "creating {} by decrypting {} with key {}".format( fileName, uuid, key ) )
+			if os.path.exists( fileName ):
+				cfrm = input( "File '{}' already exists. Overwrite it? (Y/n)\n".format( fileName ) )
+				if str.lower( cfrm ) != "y":
+					print( "Operation aborted." )
+			else:
+				# import encrypted file from the crypt
+				try:
+					encryptedFile = open( "crypt/{}".format( uuid ), "rb")
+				except Exception:
+					print( "Unable to open encrypted file." )
+					return
+				with encryptedFile:
+					bData = encryptedFile.read()
+				
+				# decrypt it using key
+				fHandler = Fernet( key )
+				decryptedBData = fHandler.decrypt(bData)
+
+				# write encrypted binary to plaintext file
+				with open( fileName, "wb+") as plainFile:
+					plainFile.write( decryptedBData )
+

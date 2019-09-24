@@ -10,10 +10,12 @@ def printHelp( command=None):
 		print( "Encrypt a file system using the commmand \"encrypt <system>\"." )
 	elif command == "add":
 		print( "Add a file to a file system using the commmand \"add <file> to <system>\"." )
-	elif spl[ 0 ] == "update":
+	elif command == "update":
 		print( "Update an encrypted file system using the commmand \"add <file> to <system>\"." )
-	elif spl[ 0 ] == "watch":
+	elif command == "watch":
 		print( "Contually watch and update a file system using the commmand \"watch <system>\". \"q\" to exit." )
+	elif command == "import":
+		print( "Import and decrypt a file system from the crypt using the commmand \"add <file> to <system>\"." )
 	else:
 		print( "You want some help? You got some!" )
 
@@ -84,6 +86,13 @@ while True:
 				printHelp( "update" )
 			else:
 				fsm.watchFileSystem( spl[ 1 ] )
+		
+		elif spl[ 0 ] == "import":
+			if len( spl ) != 2:
+				print( "Invalid command format." )
+				printHelp( "import" )
+			else:
+				fsm.importFileSystem( spl[ 1 ] )
 
 		else:
 			print( "Command not recognized. Type \"help\" for help!" )
