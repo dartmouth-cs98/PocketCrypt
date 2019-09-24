@@ -182,7 +182,7 @@ class FSManager:
 		else:
 			if addr not in self.data[ 'systems' ][ fsName ][ 'files' ]:
 				self.data[ 'systems' ][ fsName ][ 'files' ][ addr ] = {} # data assigned during encrypting
-			print( "File '{}' added to system '{}'.".format( addr, fsName ) )
+			print( "> File '{}' added to system '{}'.".format( addr, fsName ) )
 			# save metadata
 			self.saveSystems()
 

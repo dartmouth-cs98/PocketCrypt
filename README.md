@@ -36,10 +36,10 @@ Now we can add them to our File System we created.
 ```
 > Awaiting command...
 add myFile.txt to myfs
-File 'myFile.txt' added to system 'myfs'.
+> File 'myFile.txt' added to system 'myfs'.
 > Awaiting command...
 add anotherFile.txt to myfs
-File 'anotherFile.txt' added to system 'myfs'.
+> File 'anotherFile.txt' added to system 'myfs'.
 ```
 
 If you want to remove a file from your filesystem, use the `remove` command.
@@ -53,7 +53,7 @@ encrypt myfs
 > File 'myFile.txt' encrypted as '859fbe69f3dbd2cf35be8ba9aa047d05' using key 'GEhRTS1WLlPnlw0FgAGRWuHEY7ZWIwTqCzvu6joK7Ec='.
 > File 'anotherFile.txt' encrypted as 'acdfa5354379904cfd65b29915fc0c60' using key 'GEhRTS1WLlPnlw0FgAGRWuHEY7ZWIwTqCzvu6joK7Ec='.
 ```
-You'll notice that a folder `crypt` has been created. This is where all the encrypted files live. Open it up! Notice how all the file names are unrecognizable? That's because each file that's encrypted is given a random hash. Don't worry, though, PocketCrypt knows which one it is.
+You'll notice that a folder `crypt` has been created. This is where all the encrypted files live. Open it up! Notice how all the file names are unrecognizable? That's because each file that's encrypted is given a random hash. Don't worry, though, PocketCrypt knows which is which.
 
 ### Update a File System
 Let's make a change to `myFile.txt`. Now the new version is out of date with the encrypted version! We have to update the encrypted version too.
