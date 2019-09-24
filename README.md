@@ -125,3 +125,11 @@ Pretty sweet, huh! If at any time you need help, type `help` or a specific comma
 
 ## To Do
 - Improve management of how all metadata is loaded into memory each time (use mySQLite)
+
+## What'd I Learn?
+- Symmetric encryption in python
+- File management
+- Python stuff in general
+
+## What Didn't Work?
+- Coding before coming up with a complete plan made it tough, and also made it take longer than I envisioned. The finished product is completely different than what I first envisioned.
