@@ -28,23 +28,23 @@ class FSManager:
 		if not exists:
 			cfrm = input( "Unable to locate metadata file '{}'. Create one? (Y/n)\n".format( self.metadataAddr ) )
 			if str.lower( cfrm ) != "y":
-				print( "Operation aborted." )
+				print( "> Operation aborted." )
 				return
 			try:
 				data_file = open( self.metadataAddr, "w" )
 				data_file.close()
 			except IOError:
-				print ( "Unable to create metadata file." )
+				print ( "> Unable to create metadata file." )
 				return None
 		
 		# check metadata file has content to protect from JSON errors
 		if os.stat( self.metadataAddr ).st_size == 0:
 			if exists:
-				print( "Initializing metadata file." )
+				print( "> Initializing metadata file." )
 			try:
 				data_file = open( self.metadataAddr, "w" )
 			except IOError:
-				print ( "Unable to initialize metadata file." )
+				print ( "> Unable to initialize metadata file." )
 				return None
 			with data_file:
 				data_file.write( json.dumps( { "systems": {} }, indent=3 ) )
@@ -53,13 +53,13 @@ class FSManager:
 		try:
 			data_file = open( self.metadataAddr, "r+" )
 		except IOError:
-			print ( "Unable to read metadata." )
+			print ( "> Unable to read metadata." )
 			return None
 		with data_file:
 			try:
 				data = json.load( data_file )
 			except Exception:
-				print( "Error decoding metadata file." )
+				print( "> Error decoding metadata file." )
 				return None
 			return data
 	
@@ -70,14 +70,14 @@ class FSManager:
 		# import metadata
 		newData = self.importMetadata()
 		if newData is None:
-			print( "Unable to import metadata." )
+			print( "> Unable to import metadata." )
 			return
 		
 		# check if already exists
 		if fsName in self.data[ 'systems' ]:
 			cfrm = input( "File system '{}' already exists, overwrite cached data? (Y/n)\n".format( fsName ) )
 			if str.lower( cfrm ) != "y":
-				print( "Operation aborted." )
+				print( "> Operation aborted." )
 				return
 
 		# create new filesystem in memory
@@ -86,7 +86,7 @@ class FSManager:
 			'key': Fernet.generate_key().decode() # UTF-8
 			}
 
-		print( "File system '{}' created.".format( fsName ) )
+		print( "> File system '{}' created.".format( fsName ) )
 
 		# save systems
 		self.saveSystems()
@@ -97,7 +97,7 @@ class FSManager:
 		self.saveSystems()
 		self.data = self.importMetadata()
 		if self.data is None:
-			print( "Unable to commit, couldn't import metadata." )
+			print( "> Unable to commit, couldn't import metadata." )
 			return
 
 		# check file system exists
@@ -109,29 +109,29 @@ class FSManager:
 		
 		# print data
 		fsData = self.data[ 'systems' ][ fsName ]
-		print( "*** {} ***".format( fsName ) )
-		print( " - key: {}".format( fsData[ 'key' ] ) )
-		print( " - files:" )
+		print( "> *** {} ***".format( fsName ) )
+		print( ">  - key: {}".format( fsData[ 'key' ] ) )
+		print( ">  - files:" )
 		for fileName, fileData in fsData[ 'files' ].items():
 			if fileData:
 				fMessage = "encrypted as '{}' at {} UTC".format( fileData[ 'uuid' ],
 															 datetime.fromtimestamp( fileData[ 'time' ] ) )
 			else:
 				fMessage = "not yet encrypted"
-			print( "   - {} {}".format( fileName, fMessage) )
+			print( ">    - {} {}".format( fileName, fMessage) )
 
 	def showAllSystems( self ):
 		# sync local -> file -> local
 		self.saveSystems()
 		self.data = self.importMetadata()
 		if self.data is None:
-			print( "Unable to commit, couldn't import metadata." )
+			print( "> Unable to commit, couldn't import metadata." )
 			return
 		
 		for fsName, fsData in self.data[ 'systems' ].items():
-			print( "*** {} ***".format( fsName ) )
-			print( " - key: {}".format( fsData[ 'key' ] ) )
-			print( " - files:" )
+			print( "> *** {} ***".format( fsName ) )
+			print( ">  - key: {}".format( fsData[ 'key' ] ) )
+			print( ">  - files:" )
 			for fileName, fileData in fsData[ 'files' ].items():
 				if fileData:
 					fMessage = "encrypted as '{}' at {} UTC".format( fileData[ 'uuid' ],
@@ -146,7 +146,7 @@ class FSManager:
 		# grab data metadata file
 		existingData = self.importMetadata()
 		if existingData is None:
-			print( "Can't save, unable to import existing metadata." )
+			print( "> Can't save, unable to import existing metadata." )
 			return
 
 		# make appropriate changes to existing systems
@@ -162,7 +162,7 @@ class FSManager:
 		with open( self.metadataAddr, "w" ) as data_file:
 			data_file.write( json.dumps( existingData, indent=3 ) )
 
-		print( "Systems saved." )
+		# print( "> Systems saved." )
 
 
 	# add a file address to a given system
@@ -172,7 +172,7 @@ class FSManager:
 		self.saveSystems()
 		self.data = self.importMetadata()
 		if self.data is None:
-			print( "Unable to add file, couldn't import metadata." )
+			print( "> Unable to add file, couldn't import metadata." )
 			return
 
 		if fsName not in self.data[ 'systems' ]:
@@ -182,6 +182,7 @@ class FSManager:
 		else:
 			if addr not in self.data[ 'systems' ][ fsName ][ 'files' ]:
 				self.data[ 'systems' ][ fsName ][ 'files' ][ addr ] = {} # data assigned during encrypting
+			print( "File '{}' added to system '{}'.".format( addr, fsName ) )
 			# save metadata
 			self.saveSystems()
 
@@ -190,15 +191,15 @@ class FSManager:
 		self.saveSystems()
 		self.data = self.importMetadata()
 		if self.data is None:
-			print( "Unable to remove file, couldn't import metadata." )
+			print( "> Unable to remove file, couldn't import metadata." )
 			return
 
 		if fsName not in self.data[ 'systems' ]:
-			print( "System '{}' doesn't exist.\n".format( fsName ) )
+			print( "> System '{}' doesn't exist.\n".format( fsName ) )
 			return
 		else:
 			if addr not in self.data[ 'systems' ][ fsName ][ 'files' ]:
-				print( "File '{}' not found in file system '{}'".format( addr, fsName ) )
+				print( "> File '{}' not found in file system '{}'".format( addr, fsName ) )
 			else:
 				del self.data[ 'systems' ][ fsName ][ 'files' ][ addr ]
 				
@@ -213,7 +214,7 @@ class FSManager:
 		self.saveSystems()
 		self.data = self.importMetadata()
 		if self.data is None:
-			print( "Unable to commit, couldn't import metadata." )
+			print( "> Unable to commit, couldn't import metadata." )
 			return
 
 		# encrypt each file
@@ -222,13 +223,16 @@ class FSManager:
 			if str.lower( cfrm ) == "y":
 				self.createFileSystem( fsName )
 				return
+			else:
+				print( "> Operation aborted.")
+				return
 
 		filesToEncrypt = [ fileName ] if fileName is not None else self.data[ 'systems' ][ fsName ][ 'files' ]
 		if filesToEncrypt:
 			for fAddr in filesToEncrypt:
 				# check file exists
 				if not os.path.exists( fAddr ):
-					print( "File '{}' not found.".format( fAddr ) )
+					print( "> File '{}' not found.".format( fAddr ) )
 					return
 				# assign a globally unique ID to the file (32 chars)
 				if 'uuid' in self.data[ 'systems' ][ fsName ][ 'files' ][ fAddr ]:
@@ -248,17 +252,22 @@ class FSManager:
 				with open( fAddr, "rb") as f:
 					bData = f.read()
 				
-				fHandler = Fernet( self.data[ 'systems' ][ fsName ][ 'key' ] )
+				key = self.data[ 'systems' ][ fsName ][ 'key' ]
+				fHandler = Fernet( key)
 				encryptedBData = fHandler.encrypt(bData)
 
 				# write encrypted binary to shadow file in crypt
+				if not os.path.exists( 'crypt' ):
+					os.mkdir( 'crypt' )
 				with open( "crypt/{}".format( uuid ), "wb+") as cryptFile:
 					cryptFile.write( encryptedBData )
+
+				print( "> File '{}' encrypted as '{}' using key '{}'.".format( fAddr, uuid, key ) )
 
 				# take timestamp and record encryption time in seconds
 				self.data[ 'systems' ][ fsName ][ 'files' ][ fAddr ][ 'time' ] = round( time.time() )
 		else:
-			print( "No files to encrypt! Add some using the 'add' command." )
+			print( "> No files to encrypt! Add some using the 'add' command." )
 		# write systems
 		self.saveSystems()
  
@@ -270,11 +279,11 @@ class FSManager:
 		self.saveSystems()
 		self.data = self.importMetadata()
 		if self.data is None:
-			print( "Unable to update file systems, couldn't import metadata." )
+			print( "> Unable to update file systems, couldn't import metadata." )
 			return
 		
 		if fsName not in self.data[ 'systems' ]:
-			print( "System not found." )
+			print( "> System not found." )
 
 		# if any file is newer than its encryption date, re-encrypt it
 		for fAddr, info in self.data[ 'systems' ][ fsName ][ 'files' ].items():
@@ -282,7 +291,7 @@ class FSManager:
 				lastModified = os.path.getmtime( fAddr )
 				encrypted = info[ 'time' ]
 				if lastModified > encrypted:
-					print( "Change detected in '{}', re-encrypting file.".format( fAddr ) )
+					print( "> Change detected in '{}', re-encrypting file.".format( fAddr ) )
 					self.encryptFileSystem( fsName, fAddr )
 			else:
 				cfrm = input( "File '{}' not yet encrypted. Encrypt file system '{}' now? (Y/n)\n".format( fAddr, fsName ) )
@@ -294,7 +303,7 @@ class FSManager:
 	def watchFileSystem( self, fsName ):
 		while True:
 			if qInBuffer():
-				print( "No longer watching '{}'.".format( fsName ) )
+				print( "> No longer watching '{}'.".format( fsName ) )
 				break
 			self.updateFileSystem( fsName )
 			time.sleep( 1 )
@@ -305,7 +314,7 @@ class FSManager:
 		# import all metadata
 		self.data = self.importMetadata()
 		if self.data is None:
-			print( "Unable to update file systems, couldn't import metadata." )
+			print( "> Unable to update file systems, couldn't import metadata." )
 			return
 		
 		# identify files in filesystem
@@ -313,28 +322,28 @@ class FSManager:
 		key = self.data[ 'systems' ][ fsName ][ 'key' ]
 		for fileName, fileData in files.items():
 			uuid = fileData[ 'uuid' ]
-			print( "creating {} by decrypting {} with key {}".format( fileName, uuid, key ) )
+			print( "> Creating {} by decrypting {} with key {}".format( fileName, uuid, key ) )
 			if os.path.exists( fileName ):
 				cfrm = input( "File '{}' already exists. Overwrite it? (Y/n)\n".format( fileName ) )
 				if str.lower( cfrm ) != "y":
-					print( "Operation aborted." )
+					print( "> Operation aborted." )
 					continue
-				# import encrypted file from the crypt
-				try:
-					encryptedFile = open( "crypt/{}".format( uuid ), "rb")
-				except Exception:
-					print( "Unable to open encrypted file." )
-					return
-				with encryptedFile:
-					bData = encryptedFile.read()
-				
-				# decrypt it using key
-				fHandler = Fernet( key )
-				decryptedBData = fHandler.decrypt(bData)
+			# import encrypted file from the crypt
+			try:
+				encryptedFile = open( "crypt/{}".format( uuid ), "rb")
+			except Exception:
+				print( "> Unable to open encrypted file." )
+				return
+			with encryptedFile:
+				bData = encryptedFile.read()
+			
+			# decrypt it using key
+			fHandler = Fernet( key )
+			decryptedBData = fHandler.decrypt(bData)
 
-				# write encrypted binary to plaintext file
-				with open( fileName, "wb+") as plainFile:
-					plainFile.write( decryptedBData )
+			# write encrypted binary to plaintext file
+			with open( fileName, "wb+") as plainFile:
+				plainFile.write( decryptedBData )
 
 	
 	def clearAllData( self ):
@@ -346,11 +355,11 @@ class FSManager:
 		self.saveSystems()
 		self.data = self.importMetadata()
 		if self.data is None:
-			print( "Unable to update file systems, couldn't import metadata." )
+			print( "> Unable to update file systems, couldn't import metadata." )
 			return
 		
 		if fsName not in self.data[ 'systems' ]:
-			print( "System not found." )
+			print( "> System not found." )
 		
 		# clear files
 		self.data[ 'systems' ][ fsName ][ 'files' ] = {}

@@ -3,15 +3,15 @@
       "myfs": {
          "files": {
             "myFile.txt": {
-               "uuid": "89b9454f103ee7b35d2b534391fc3681",
-               "time": 1569345127
+               "uuid": "859fbe69f3dbd2cf35be8ba9aa047d05",
+               "time": 1569347736
+            },
+            "anotherFile.txt": {
+               "uuid": "acdfa5354379904cfd65b29915fc0c60",
+               "time": 1569347908
             }
          },
-         "key": "dCm490SynnxsqBbCVjSsJYl12wrcqcQ5LWCS60QCeEo="
-      },
-      "myfs111": {
-         "files": {},
-         "key": "WQezwRycTuTle5lCmGWeoYzRiGnqrbJGOwVEGk6J0Sk="
+         "key": "GEhRTS1WLlPnlw0FgAGRWuHEY7ZWIwTqCzvu6joK7Ec="
       }
    }
 }

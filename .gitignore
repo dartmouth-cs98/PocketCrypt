@@ -3,6 +3,12 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# PocketCrypt Specific
+crypt/
+metadata.json
+
+
+
 # C extensions
 *.so
 
