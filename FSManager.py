@@ -1,15 +1,24 @@
 import json
 import random
+import msvcrt
 import os
-import datetime
+import keyboard
+from datetime import datetime
 import time
 from cryptography.fernet import Fernet
+
+# helper function to see if 'q' is in keyboard buffer
+def qInBuffer():
+	while msvcrt.kbhit(): # exists letters in keyboard buffer
+		if msvcrt.getch().decode() == 'q': # pop a letter
+			return True
+	return False
 
 class FSManager:
 
 	def __init__( self, metadataAddr ):
 		self.metadataAddr = metadataAddr
-		self.data = { 'systems': {} }
+		self.data = self.importMetadata()
 
 	
 	# safe way to import metadata
@@ -55,46 +64,65 @@ class FSManager:
 			return data
 	
 	
-	# update cached file system to match metadata file
-	def loadFileSystem( self, fsName ):
-		# check if already loaded
-		if fsName in self.data[ 'systems' ]:
-			cfrm = input( "File system '{}' already loaded, overwrite cached data? (Y/n)\n".format( fsName ) )
-			if str.lower( cfrm ) != "y":
-				print( "Operation aborted." )
-				return
+	# create new file system and save it
+	def createFileSystem( self, fsName ):
 
 		# import metadata
 		newData = self.importMetadata()
 		if newData is None:
 			print( "Unable to import metadata." )
 			return
-
-		if fsName not in newData[ 'systems' ]:
-			isNew = True
-			cfrm = input( "File system '{}' doesn't exist. Initialize one? (Y/n)\n".format( fsName ) )
+		
+		# check if already exists
+		if fsName in self.data[ 'systems' ]:
+			cfrm = input( "File system '{}' already exists, overwrite cached data? (Y/n)\n".format( fsName ) )
 			if str.lower( cfrm ) != "y":
 				print( "Operation aborted." )
 				return
-		else:
-			isNew = False
 
 		# create new filesystem in memory
-		newSystem = {}
-		if isNew:
-			newSystem[ 'files' ] = {}
-			newSystem[ 'key' ] = Fernet.generate_key().decode() # UTF-8
-		else:
-			newSystem[ 'files' ] = newData[ 'systems' ][ fsName ][ 'files' ]
-			newSystem[ 'key' ] = newData[ 'systems' ][ fsName ][ 'key' ]
+		self.data[ 'systems' ][ fsName ] = {
+			'files': {},
+			'key': Fernet.generate_key().decode() # UTF-8
+			}
+
+		print( "File system '{}' created.".format( fsName ) )
+
+		# save systems
+		self.saveSystems()
+
+	# show all data about a specific file system
+	def showFileSystem( self, fsName ):
+		# sync local -> file -> local
+		self.saveSystems()
+		self.data = self.importMetadata()
+		if self.data is None:
+			print( "Unable to commit, couldn't import metadata." )
+			return
+
+		# check file system exists
+		if fsName not in self.data[ 'systems' ]:
+			cfrm = input( "System '{}' doesn't exist. Create it? (Y/n)\n".format( fsName ) )
+			if str.lower( cfrm ) == "y":
+				self.createFileSystem( fsName )
+				return
 		
-		self.data[ 'systems' ][ fsName ] = newSystem
+		# print data
+		fsData = self.data[ 'systems' ][ fsName ]
+		print( "*** {} ***".format( fsName ) )
+		print( " - key: {}".format( fsData[ 'key' ] ) )
+		print( " - files:" )
+		for fileName, fileData in fsData[ 'files' ].items():
+			if fileData:
+				fMessage = "encrypted as '{}' at {} UTC".format( fileData[ 'uuid' ],
+															 datetime.fromtimestamp( fileData[ 'time' ] ) )
+			else:
+				fMessage = "not yet encrypted"
+			print( "   - {} {}".format( fileName, fMessage) )
 
-		print( "File system '{}' loaded.".format( fsName ) )
-		print( json.dumps( self.data[ 'systems' ][ fsName ], indent=2 ) )
 
 
-	# update metadata file to match given list of file systems
+	# update metadata file to match given list of file systems= 
 	def saveSystems( self ):
 
 		# grab data metadata file
@@ -121,10 +149,18 @@ class FSManager:
 
 	# add a file address to a given system
 	def addFileToSystem( self, fsName, addr ):
+
+		# sync local -> file -> local
+		self.saveSystems()
+		self.data = self.importMetadata()
+		if self.data is None:
+			print( "Unable to commit, couldn't import metadata." )
+			return
+
 		if fsName not in self.data[ 'systems' ]:
-			cfrm = input( "System '{}' not in memory. Load it? (Y/n)\n".format( fsName ) )
+			cfrm = input( "System '{}' doesn't exist. Create it? (Y/n)\n".format( fsName ) )
 			if str.lower( cfrm ) == "y":
-				self.loadFileSystem( fsName )
+				self.createFileSystem( fsName )
 		else:
 			if addr not in self.data[ 'systems' ][ fsName ][ 'files' ]:
 				self.data[ 'systems' ][ fsName ][ 'files' ][ addr ] = {} # data assigned during encrypting
@@ -143,40 +179,48 @@ class FSManager:
 			return
 
 		# encrypt each file
-		filesToEncrypt = [ fileName ] if fileName is not None else self.data[ 'systems' ][ fsName ][ 'files' ]
-		for fAddr in filesToEncrypt:
-			# check file exists
-			if not os.path.exists( fAddr ):
-				print( "File '{}' not found.".format( fAddr ) )
+		if fsName not in self.data[ 'systems' ]:
+			cfrm = input( "System '{}' doesn't exist. Create it? (Y/n)\n".format( fsName ) )
+			if str.lower( cfrm ) == "y":
+				self.createFileSystem( fsName )
 				return
-			# assign a globally unique ID to the file (32 chars)
-			if 'uuid' in self.data[ 'systems' ][ fsName ][ 'files' ][ fAddr ]:
-				uuid = self.data[ 'systems' ][ fsName ][ 'files' ][ fAddr ][ 'uuid' ]
-			else:
-				uuids = []
-				for __, data in self.data[ 'systems' ].items():
-					for __, id in data[ 'files' ].items():
-						uuids.append( id )
-				while True:
-					uuid = "{}".format( hex( random.getrandbits( 128 ) ) )[ 2 : ]
-					if uuid not in uuids:
-						break
-				self.data[ 'systems' ][ fsName ][ 'files' ][ fAddr ][ 'uuid' ] = uuid
 
-			# encrypt file using filesystem's key
-			with open( fAddr, "rb") as f:
-				bData = f.read()
-			
-			fHandler = Fernet( self.data[ 'systems' ][ fsName ][ 'key' ] )
-			encryptedBData = fHandler.encrypt(bData)
+		filesToEncrypt = [ fileName ] if fileName is not None else self.data[ 'systems' ][ fsName ][ 'files' ]
+		if filesToEncrypt:
+			for fAddr in filesToEncrypt:
+				# check file exists
+				if not os.path.exists( fAddr ):
+					print( "File '{}' not found.".format( fAddr ) )
+					return
+				# assign a globally unique ID to the file (32 chars)
+				if 'uuid' in self.data[ 'systems' ][ fsName ][ 'files' ][ fAddr ]:
+					uuid = self.data[ 'systems' ][ fsName ][ 'files' ][ fAddr ][ 'uuid' ]
+				else:
+					uuids = []
+					for __, data in self.data[ 'systems' ].items():
+						for __, id in data[ 'files' ].items():
+							uuids.append( id )
+					while True:
+						uuid = "{}".format( hex( random.getrandbits( 128 ) ) )[ 2 : ]
+						if uuid not in uuids:
+							break
+					self.data[ 'systems' ][ fsName ][ 'files' ][ fAddr ][ 'uuid' ] = uuid
 
-			# write encrypted binary to shadow file in crypt
-			with open( "crypt/{}".format( uuid ), "wb+") as cryptFile:
-				cryptFile.write(encryptedBData)
+				# encrypt file using filesystem's key
+				with open( fAddr, "rb") as f:
+					bData = f.read()
+				
+				fHandler = Fernet( self.data[ 'systems' ][ fsName ][ 'key' ] )
+				encryptedBData = fHandler.encrypt(bData)
 
-			# take timestamp and record encryption time in seconds
-			self.data[ 'systems' ][ fsName ][ 'files' ][ fAddr ][ 'time' ] = round( time.time() )
+				# write encrypted binary to shadow file in crypt
+				with open( "crypt/{}".format( uuid ), "wb+") as cryptFile:
+					cryptFile.write(encryptedBData)
 
+				# take timestamp and record encryption time in seconds
+				self.data[ 'systems' ][ fsName ][ 'files' ][ fAddr ][ 'time' ] = round( time.time() )
+		else:
+			print( "No files to encrypt! Add some using the 'add' command." )
 		# write systems
 		self.saveSystems()
  
@@ -191,10 +235,24 @@ class FSManager:
 			print( "Unable to update file systems, couldn't import metadata." )
 			return
 		
+		if fsName not in self.data[ 'systems' ]:
+			print( "System not found." )
+
 		# if any file is newer than its encryption date, re-encrypt it
 		for fAddr, info in self.data[ 'systems' ][ fsName ][ 'files' ].items():
 			lastModified = os.path.getmtime( fAddr )
 			encrypted = info[ 'time' ]
 			if lastModified > encrypted:
-				print( "Change detected in '{}', re-encrypting file." )
+				print( "Change detected in '{}', re-encrypting file.".format( fAddr ) )
 				self.encryptFileSystem( fsName, fAddr )
+
+	# continually watch and update a filesystem
+	def watchFileSystem( self, fsName ):
+		while True:
+			if qInBuffer():
+				print( "No longer watching '{}'.".format( fsName ) )
+				break
+			self.updateFileSystem( fsName )
+			time.sleep( 1 )
+			
+	
