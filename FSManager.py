@@ -10,6 +10,7 @@ class FSManager:
 		self.systems = {}
 
 	
+	# safe way to import metadata
 	def importMetadata( self ):
 		# check metadata file exists
 		exists = os.path.exists( self.metadataAddr )
@@ -49,6 +50,7 @@ class FSManager:
 				print( "Error decoding metadata file." )
 				return None
 			return data
+	
 	
 	# update current file system to match metadata file
 	def loadFileSystem( self, fsName ):
@@ -120,7 +122,18 @@ class FSManager:
 
 	# add a file address to a given system
 	def addFileToSystem( self, fsName, addr ):
-		self.systems[ fsName ].addFile( addr )
+		if fsName not in self.systems:
+			cfrm = input( "System '{}' not in local cache. Load it? (Y/n)\n".format( fsName ) )
+			if str.lower( cfrm ) == "y":
+				self.loadFileSystem( fsName )
+		else:
+			self.systems[ fsName ].addFile( addr )
+			# save metadata
+			self.saveSystems()
 
-		# save metadata
-		self.saveSystems()
+	
+	# commit a file system
+	# def commitFileSystem( self, fsName ):
+
+		# identify every file
+		

@@ -17,16 +17,16 @@ def saveKey( fs ):
 	return key
 
 
-FSManager = FSManager( "metadata.json" )
+fsm = FSManager( "metadata.json" )
 
 
-FSManager.loadFileSystem( "myFileSystem" )
-# FSManager.addFileToSystem( 'myOldFileSystem', "myFile.txt")
-# FSManager.loadFileSystem( "myNewFileSystem" )
+fsm.loadFileSystem( "myFileSystem" )
+fsm.addFileToSystem( 'myFileSystem', "myFile.txt")
+# fsm.loadFileSystem( "myNewFileSystem" )
 
-# FSManager.commitFileSystem( )
+# fsm.commitFileSystem( "myFileSystem" )
 
-FSManager.saveSystems()
+fsm.saveSystems()
 
 
 
