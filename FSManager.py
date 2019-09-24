@@ -79,7 +79,7 @@ class FSManager:
 		# wrap the file system data in a FileSystem object
 		newSystem = FileSystem()
 		if isNew:
-			newSystem.files = {}
+			newSystem.files = []
 			newSystem.key = Fernet.generate_key().decode() # UTF-8
 		else:
 			newSystem.files = dataJSON[ fsName ][ 'files' ]

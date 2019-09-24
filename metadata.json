@@ -1,10 +1,8 @@
 {
    "myFileSystem": {
-      "key": "8ejOqIa-z9lJi3kRuxFXaj__YAGINHfVgIzPMEeareU=",
-      "files": []
-   },
-   "myOldFileSystem": {
-      "key": "tgWrHUKU65lIzBTvm0mtKSsCpKUc7f0BxUO3ou9TFA4=",
-      "files": []
+      "key": "FDbtyBeyUF2NWAu8fLoRxLWj9auJnI8_-XQenRfa01Q=",
+      "files": [
+         "myFile.txt"
+      ]
    }
 }
