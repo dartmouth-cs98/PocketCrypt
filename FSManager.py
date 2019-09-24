@@ -1,13 +1,14 @@
 import json
+import random
 import os
-from FileSystem import FileSystem
+import time
 from cryptography.fernet import Fernet
 
 class FSManager:
 
 	def __init__( self, metadataAddr ):
 		self.metadataAddr = metadataAddr
-		self.systems = {}
+		self.data = { 'systems': {} }
 
 	
 	# safe way to import metadata
@@ -36,8 +37,9 @@ class FSManager:
 				print ( "Unable to initialize metadata file." )
 				return None
 			with data_file:
-				data_file.write( "{}" )
+				data_file.write( json.dumps( { "systems": {} }, indent=3 ) )
 
+		# decode the JSON
 		try:
 			data_file = open( self.metadataAddr, "r+" )
 		except IOError:
@@ -55,19 +57,19 @@ class FSManager:
 	# update current file system to match metadata file
 	def loadFileSystem( self, fsName ):
 		# check if already loaded
-		if fsName in self.systems:
+		if fsName in self.data[ 'systems' ]:
 			cfrm = input( "File system '{}' already loaded, overwrite cached data? (Y/n)\n".format( fsName ) )
 			if str.lower( cfrm ) != "y":
 				print( "Operation aborted." )
 				return
 
 		# import metadata
-		dataJSON = self.importMetadata()
-		if dataJSON is None:
+		newData = self.importMetadata()
+		if newData is None:
 			print( "Unable to import metadata." )
 			return
 
-		if fsName not in dataJSON:
+		if fsName not in newData[ 'systems' ]:
 			isNew = True
 			cfrm = input( "File system '{}' doesn't exist. Initialize one? (Y/n)\n".format( fsName ) )
 			if str.lower( cfrm ) != "y":
@@ -76,64 +78,91 @@ class FSManager:
 		else:
 			isNew = False
 
-		# wrap the file system data in a FileSystem object
-		newSystem = FileSystem()
+		# create new filesystem in memory
+		newSystem = {}
 		if isNew:
-			newSystem.files = []
-			newSystem.key = Fernet.generate_key().decode() # UTF-8
+			newSystem[ 'files' ] = {}
+			newSystem[ 'key' ] = Fernet.generate_key().decode() # UTF-8
 		else:
-			newSystem.files = dataJSON[ fsName ][ 'files' ]
-			newSystem.key = dataJSON[ fsName ][ 'key' ]
+			newSystem[ 'files' ] = newData[ 'systems' ][ fsName ][ 'files' ]
+			newSystem[ 'key' ] = newData[ 'systems' ][ fsName ][ 'key' ]
 		
-		self.systems[ fsName ] = newSystem
+		self.data[ 'systems' ][ fsName ] = newSystem
 
 		print( "File system '{}' loaded.".format( fsName ) )
-		print( json.dumps( self.systems[ fsName ].obj(), indent=2 ) )
+		print( json.dumps( self.data[ 'systems' ][ fsName ], indent=2 ) )
 
 
 	# update metadata file to match given list of file systems
 	def saveSystems( self ):
 
-		# grab all systems from metadata file
-		dataObj = self.importMetadata()
-		if dataObj is None:
-			print( "Can't save, unable to import metadata." )
+		# grab data metadata file
+		existingData = self.importMetadata()
+		if existingData is None:
+			print( "Can't save, unable to import existing metadata." )
 			return
 
-		# serialize all cached systems
-		serLocalSystems = { name: fs.obj() for name, fs in self.systems.items() }
-
 		# make appropriate changes to existing systems
-		for fs in dataObj:
-			if fs in serLocalSystems:
-				dataObj[ fs ] = serLocalSystems[ fs ] # overwrite with local changes
-				del serLocalSystems[ fs ]
+		for fs in existingData[ 'systems' ]:
+			if fs in self.data[ 'systems' ]:
+				existingData[ 'systems' ][ fs ] = self.data[ 'systems' ][ fs ] # overwrite with local changes
 		
 		# tack on any new systems
-		for fs, data in serLocalSystems.items():
-			dataObj[ fs ] = data
+		for fs, data in self.data[ 'systems' ].items():
+			existingData[ 'systems' ][ fs ] = data
 
 		# overwrite metadata file
 		with open( self.metadataAddr, "w" ) as data_file:
-			data_file.write( json.dumps( dataObj, indent=3 ) )
+			data_file.write( json.dumps( existingData, indent=3 ) )
 
 		print( "Systems saved." )
 
 
 	# add a file address to a given system
 	def addFileToSystem( self, fsName, addr ):
-		if fsName not in self.systems:
-			cfrm = input( "System '{}' not in local cache. Load it? (Y/n)\n".format( fsName ) )
+		if fsName not in self.data[ 'systems' ]:
+			cfrm = input( "System '{}' not in memory. Load it? (Y/n)\n".format( fsName ) )
 			if str.lower( cfrm ) == "y":
 				self.loadFileSystem( fsName )
 		else:
-			self.systems[ fsName ].addFile( addr )
+			if addr not in self.data[ 'systems' ][ fsName ][ 'files' ]:
+				self.data[ 'systems' ][ fsName ][ 'files' ][ addr ] = None # UID assigned during encrypting
 			# save metadata
 			self.saveSystems()
 
 	
 	# commit a file system
-	# def commitFileSystem( self, fsName ):
+	# def encryptFileSystem( self, fsName ):
 
-		# identify every file
+	# 	# ensure systems are written
+	# 	self.saveSystems()
+
+	# 	# fetch metadata for each file under the system
+	# 	dataJSON = self.importMetadata()
+	# 	if dataJSON is None:
+	# 		print( "Unable to commit, couldn't import metadata." )
+	# 		return
+	# 	files = dataJSON[ 'systems' ][ fsName ][ 'files' ]
+
+	# 	for f in files:
+	# 		# check file exists
+	# 		if not os.path.exists( f ):
+	# 			print( "File '{}' not found.".format( f ) )
+	# 			return
+	# 		else:
+	# 			# assign a globally unique ID to the file (32 chars)
+	# 			# while True:
+	# 			uuid = "{}".format( hex( random.getrandbits( 128 ) ) )[ 2 : ]
+	# 				# if uuid not in ( id for  in ):
+	# 				# 	break
+	# 			files[ f ] = uuid
+	# 			print( uuid )
 		
+	# 	# write systems
+	# 	self.saveSystems()
+					
+
+				
+
+
+			

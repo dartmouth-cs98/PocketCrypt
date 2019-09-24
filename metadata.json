@@ -1,8 +1,17 @@
 {
-   "myFileSystem": {
-      "key": "FDbtyBeyUF2NWAu8fLoRxLWj9auJnI8_-XQenRfa01Q=",
-      "files": [
-         "myFile.txt"
-      ]
+   "systems": {
+      "myFileSystem": {
+         "files": {
+            "myFile.txt": null,
+            "myFile1.txt": null
+         },
+         "key": "7PuJ7_4KcoISgiK5o6XtMqpWPNT8QwK__hm8xFJF3OA="
+      },
+      "myNewFileSystem": {
+         "files": {
+            "myFile.txt": null
+         },
+         "key": "wJAlJwp-bASqqxraz9rmwegC9oZiAfYlXdL0PKi57IM="
+      }
    }
 }
