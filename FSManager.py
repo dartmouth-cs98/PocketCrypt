@@ -120,7 +120,25 @@ class FSManager:
 				fMessage = "not yet encrypted"
 			print( "   - {} {}".format( fileName, fMessage) )
 
-
+	def showAllSystems( self ):
+		# sync local -> file -> local
+		self.saveSystems()
+		self.data = self.importMetadata()
+		if self.data is None:
+			print( "Unable to commit, couldn't import metadata." )
+			return
+		
+		for fsName, fsData in self.data[ 'systems' ].items():
+			print( "*** {} ***".format( fsName ) )
+			print( " - key: {}".format( fsData[ 'key' ] ) )
+			print( " - files:" )
+			for fileName, fileData in fsData[ 'files' ].items():
+				if fileData:
+					fMessage = "encrypted as '{}' at {} UTC".format( fileData[ 'uuid' ],
+																datetime.fromtimestamp( fileData[ 'time' ] ) )
+				else:
+					fMessage = "not yet encrypted"
+				print( "   - {} {}".format( fileName, fMessage) )
 
 	# update metadata file to match given list of file systems= 
 	def saveSystems( self ):

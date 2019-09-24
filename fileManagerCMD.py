@@ -6,6 +6,7 @@ def printHelp( command=None):
 		print( "Create a file system using the commmand \"create <system>\"." )
 	elif command == "show":
 		print( "Show data for a file system using the commmand \"show <system>\"." )
+		print( "Show all file systems using the commmand \"show all systems\"." )
 	elif command == "encrypt":
 		print( "Encrypt a file system using the commmand \"encrypt <system>\"." )
 	elif command == "add":
@@ -46,11 +47,13 @@ while True:
 				fsm.createFileSystem( spl[ 1 ] )
 		
 		elif spl[ 0 ] == "show":
-			if len( spl ) != 2:
+			if spl == [ 'show', 'all', 'systems' ]:
+				fsm.showAllSystems()
+			elif len( spl ) == 2:
+				fsm.showFileSystem( spl[ 1 ] )
+			else:
 				print( "Invalid command format." )
 				printHelp( "show" )
-			else:
-				fsm.showFileSystem( spl[ 1 ] )
 		
 		elif spl[ 0 ] == "encrypt":
 			if len( spl ) != 2:
