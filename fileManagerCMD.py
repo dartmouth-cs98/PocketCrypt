@@ -11,8 +11,8 @@ fsm.addFileToSystem( "myFileSystem", "myFile1.txt")
 fsm.loadFileSystem( "myNewFileSystem" )
 fsm.addFileToSystem( "myNewFileSystem", "myFile.txt")
 
-# fsm.encryptFileSystem( "myFileSystem" )
-# fsm.encryptFileSystem( "myNewFileSystem" )
+fsm.encryptFileSystem( "myFileSystem" )
+fsm.encryptFileSystem( "myNewFileSystem" )
 
 
 # fsm.saveSystems()

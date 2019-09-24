@@ -132,35 +132,37 @@ class FSManager:
 
 	
 	# commit a file system
-	# def encryptFileSystem( self, fsName ):
+	def encryptFileSystem( self, fsName ):
 
-	# 	# ensure systems are written
-	# 	self.saveSystems()
+		# sync local -> file -> local
+		self.saveSystems()
+		self.data = self.importMetadata()
+		if self.data is None:
+			print( "Unable to commit, couldn't import metadata." )
+			return
 
-	# 	# fetch metadata for each file under the system
-	# 	dataJSON = self.importMetadata()
-	# 	if dataJSON is None:
-	# 		print( "Unable to commit, couldn't import metadata." )
-	# 		return
-	# 	files = dataJSON[ 'systems' ][ fsName ][ 'files' ]
-
-	# 	for f in files:
-	# 		# check file exists
-	# 		if not os.path.exists( f ):
-	# 			print( "File '{}' not found.".format( f ) )
-	# 			return
-	# 		else:
-	# 			# assign a globally unique ID to the file (32 chars)
-	# 			# while True:
-	# 			uuid = "{}".format( hex( random.getrandbits( 128 ) ) )[ 2 : ]
-	# 				# if uuid not in ( id for  in ):
-	# 				# 	break
-	# 			files[ f ] = uuid
-	# 			print( uuid )
+		for f in self.data[ 'systems' ][ fsName ][ 'files' ]:
+			# check file exists
+			if not os.path.exists( f ):
+				print( "File '{}' not found.".format( f ) )
+				return
+			else:
+				# assign a globally unique ID to the file (32 chars)
+				uuids = []
+				for __, data in self.data[ 'systems' ].items():
+					for __, id in data[ 'files' ].items():
+						uuids.append( id )
+				while True:
+					uuid = "{}".format( hex( random.getrandbits( 128 ) ) )[ 2 : ]
+					if uuid not in uuids:
+						break
+				self.data[ 'systems' ][ fsName ][ 'files' ][ f ] = uuid
+				print( uuid )
 		
-	# 	# write systems
-	# 	self.saveSystems()
-					
+		# write systems
+		self.saveSystems()
+ 
+
 
 				
 
