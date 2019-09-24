@@ -10,3 +10,4 @@ CS 98 Hack 1
 ### To Do
 - Make error messages more informative
 - Throw errors instead of printing messages
+- Maybe encrypt specific files instead of entire file system when changes are made

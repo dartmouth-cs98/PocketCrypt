@@ -7,13 +7,14 @@ fsm = FSManager( "metadata.json" )
 
 fsm.loadFileSystem( "myFileSystem" )
 fsm.addFileToSystem( "myFileSystem", "myFile.txt")
-# fsm.addFileToSystem( "myFileSystem", "myFile1.txt")
-fsm.loadFileSystem( "myNewFileSystem" )
-fsm.addFileToSystem( "myNewFileSystem", "myFile.txt")
+fsm.addFileToSystem( "myFileSystem", "myFile1.txt")
+# fsm.loadFileSystem( "myNewFileSystem" )
+# fsm.addFileToSystem( "myNewFileSystem", "myFile.txt")
 
-fsm.encryptFileSystem( "myFileSystem" )
+# fsm.encryptFileSystem( "myFileSystem" )
 # fsm.encryptFileSystem( "myNewFileSystem" )
-
+ 
+fsm.updateFileSystem( "myFileSystem" )
 
 # fsm.saveSystems()
 

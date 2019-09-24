@@ -2,15 +2,16 @@
    "systems": {
       "myFileSystem": {
          "files": {
-            "myFile.txt": "56e6b376ef8423a25f5aa8330326e9d5"
+            "myFile.txt": {
+               "uuid": "56e34eb6c6610c2b7224e82380c0049f",
+               "time": 1569300353
+            },
+            "myFile1.txt": {
+               "uuid": "e1437a65e94760fef89178ac4ed5ffc0",
+               "time": 1569300376
+            }
          },
-         "key": "WdjBlesPaYuhGXBu86oyki0w2uXz27OqV1B7Gl59DLU="
-      },
-      "myNewFileSystem": {
-         "files": {
-            "myFile.txt": null
-         },
-         "key": "rU1WBCBIVU6Uslq6Yh9gim4Wq6ED7qy7CsZny1I12qg="
+         "key": "uL9HQu7wk1ioMVSRVVZZOPH8-mX7y9olcDRQ28LuGqo="
       }
    }
 }
