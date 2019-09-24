@@ -11,7 +11,7 @@ $ python fileManagerCMD.py
 > Initializing metadata file.
 > Awaiting command...
 ```
-You can quit this program interface at any time using 'q'. Don't worry, all our data is saved in a metadata file.
+You can quit this program interface at any time using 'q'. Don't worry, all your data is saved in a metadata file.
 
 ### Create a File System
 First thing we should do is create a File System.
@@ -19,7 +19,6 @@ First thing we should do is create a File System.
 > Awaiting command...
 create myfs
 > File system 'myfs' created.
-> Awaiting command...
 ```
 
 Remember, you can view all existing File Systems and their metadata with the `show all systems` command.
@@ -53,7 +52,6 @@ With all the relevent files added to our File System, we can encrypt it for the 
 encrypt myfs
 > File 'myFile.txt' encrypted as '859fbe69f3dbd2cf35be8ba9aa047d05' using key 'GEhRTS1WLlPnlw0FgAGRWuHEY7ZWIwTqCzvu6joK7Ec='.
 > File 'anotherFile.txt' encrypted as 'acdfa5354379904cfd65b29915fc0c60' using key 'GEhRTS1WLlPnlw0FgAGRWuHEY7ZWIwTqCzvu6joK7Ec='.
-> Awaiting command...
 ```
 You'll notice that a folder `crypt` has been created. This is where all the encrypted files live. Open it up! Notice how all the file names are unrecognizable? That's because each file that's encrypted is given a random hash. Don't worry, though, PocketCrypt knows which one it is.
 
