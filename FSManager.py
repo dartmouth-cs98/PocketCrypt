@@ -154,7 +154,7 @@ class FSManager:
 		self.saveSystems()
 		self.data = self.importMetadata()
 		if self.data is None:
-			print( "Unable to commit, couldn't import metadata." )
+			print( "Unable to add file, couldn't import metadata." )
 			return
 
 		if fsName not in self.data[ 'systems' ]:
@@ -164,6 +164,26 @@ class FSManager:
 		else:
 			if addr not in self.data[ 'systems' ][ fsName ][ 'files' ]:
 				self.data[ 'systems' ][ fsName ][ 'files' ][ addr ] = {} # data assigned during encrypting
+			# save metadata
+			self.saveSystems()
+
+	def removeFileFromSystem( self, fsName, addr ):
+		# sync local -> file -> local
+		self.saveSystems()
+		self.data = self.importMetadata()
+		if self.data is None:
+			print( "Unable to remove file, couldn't import metadata." )
+			return
+
+		if fsName not in self.data[ 'systems' ]:
+			print( "System '{}' doesn't exist.\n".format( fsName ) )
+			return
+		else:
+			if addr not in self.data[ 'systems' ][ fsName ][ 'files' ]:
+				print( "File '{}' not found in file system '{}'".format( addr, fsName ) )
+			else:
+				del self.data[ 'systems' ][ fsName ][ 'files' ][ addr ]
+				
 			# save metadata
 			self.saveSystems()
 
@@ -240,11 +260,17 @@ class FSManager:
 
 		# if any file is newer than its encryption date, re-encrypt it
 		for fAddr, info in self.data[ 'systems' ][ fsName ][ 'files' ].items():
-			lastModified = os.path.getmtime( fAddr )
-			encrypted = info[ 'time' ]
-			if lastModified > encrypted:
-				print( "Change detected in '{}', re-encrypting file.".format( fAddr ) )
-				self.encryptFileSystem( fsName, fAddr )
+			if info:
+				lastModified = os.path.getmtime( fAddr )
+				encrypted = info[ 'time' ]
+				if lastModified > encrypted:
+					print( "Change detected in '{}', re-encrypting file.".format( fAddr ) )
+					self.encryptFileSystem( fsName, fAddr )
+			else:
+				cfrm = input( "File '{}' not yet encrypted. Encrypt file system '{}' now? (Y/n)\n".format( fAddr, fsName ) )
+				if str.lower( cfrm ) == "y":
+					self.encryptFileSystem( fsName )
+					return
 
 	# continually watch and update a filesystem
 	def watchFileSystem( self, fsName ):
@@ -255,6 +281,7 @@ class FSManager:
 			self.updateFileSystem( fsName )
 			time.sleep( 1 )
 			
+
 	# import a filesystem from crypt
 	def importFileSystem( self, fsName ):
 		# import all metadata
@@ -273,7 +300,7 @@ class FSManager:
 				cfrm = input( "File '{}' already exists. Overwrite it? (Y/n)\n".format( fileName ) )
 				if str.lower( cfrm ) != "y":
 					print( "Operation aborted." )
-			else:
+					continue
 				# import encrypted file from the crypt
 				try:
 					encryptedFile = open( "crypt/{}".format( uuid ), "rb")
@@ -291,3 +318,24 @@ class FSManager:
 				with open( fileName, "wb+") as plainFile:
 					plainFile.write( decryptedBData )
 
+	
+	def clearAllData( self ):
+		self.data = { "systems": {} }
+		open( self.metadataAddr, "w" ).close()
+	
+	def clearFilesFromSystem( self, fsName ):
+		# sync local -> file -> local
+		self.saveSystems()
+		self.data = self.importMetadata()
+		if self.data is None:
+			print( "Unable to update file systems, couldn't import metadata." )
+			return
+		
+		if fsName not in self.data[ 'systems' ]:
+			print( "System not found." )
+		
+		# clear files
+		self.data[ 'systems' ][ fsName ][ 'files' ] = {}
+
+		# save systems
+		self.saveSystems()

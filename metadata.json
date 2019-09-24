@@ -1,17 +1,13 @@
 {
    "systems": {
-      "myFileSystem": {
+      "myfs": {
          "files": {
             "myFile.txt": {
-               "uuid": "121ead26b666aee29cb810669635028e",
-               "time": 1569343279
-            },
-            "myFile1.txt": {
-               "uuid": "41007b88126e582f434dd3e47dd7ba97",
-               "time": 1569343279
+               "uuid": "89b9454f103ee7b35d2b534391fc3681",
+               "time": 1569345127
             }
          },
-         "key": "eEAse_gSZ53i1zrHk_zBwONMlI4ipQdogbLGIz2oZSg="
+         "key": "dCm490SynnxsqBbCVjSsJYl12wrcqcQ5LWCS60QCeEo="
       }
    }
 }

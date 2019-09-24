@@ -16,25 +16,18 @@ def printHelp( command=None):
 		print( "Contually watch and update a file system using the commmand \"watch <system>\". \"q\" to exit." )
 	elif command == "import":
 		print( "Import and decrypt a file system from the crypt using the commmand \"add <file> to <system>\"." )
+	elif command == "clear":
+		print( "Clear files for a specific system by using the commmand \"clear <system>\"." )
+		print( "Clear all metadata by using the commmand \"clear all data\"." )
+	elif command == "remove":
+		print( "Remove a file for a specific system by using the commmand \"remove <file> from <system>\"." )
+
 	else:
 		print( "You want some help? You got some!" )
 
 fsm = FSManager( "metadata.json" )
 
-# fsm.createFileSystem( "myFileSystem" )
-# fsm.addFileToSystem( "myFileSystem", "myFile.txt")
-# fsm.addFileToSystem( "myFileSystem", "myFile1.txt")
-# fsm.loadFileSystem( "myNewFileSystem" )
-# fsm.addFileToSystem( "myNewFileSystem", "myFile.txt")
 
-# fsm.encryptFileSystem( "myFileSystem" )
-# fsm.encryptFileSystem( "myNewFileSystem" )
- 
-# fsm.updateFileSystem( "myFileSystem" )
-
-# fsm.saveSystems()
-
-# add tab functionality
 while True:
 	i = input( "Awaiting command...\n" )
 	if str.lower( i ) == "q":
@@ -72,6 +65,13 @@ while True:
 				printHelp( "add" )
 			else:
 				fsm.addFileToSystem( spl[ 3 ], spl[ 1 ] )
+		
+		elif spl[ 0 ] == "remove":
+			if len( spl ) != 4 or spl[ 2 ] != "from":
+				print( "Invalid command format." )
+				printHelp( "remove" )
+			else:
+				fsm.removeFileFromSystem( spl[ 3 ], spl[ 1 ] )
 
 		elif spl[ 0 ] == "update":
 			if len( spl ) != 2:
@@ -93,6 +93,15 @@ while True:
 				printHelp( "import" )
 			else:
 				fsm.importFileSystem( spl[ 1 ] )
+
+		elif spl[ 0 ] == "clear":
+			if spl == [ 'clear', 'all', 'data' ]:
+				fsm.clearAllData()
+			elif len( spl ) == 2:
+				fsm.clearFilesFromSystem( spl[ 1 ] )
+			else:
+				print( "Invalid command format." )
+				printHelp( "clear" )
 
 		else:
 			print( "Command not recognized. Type \"help\" for help!" )

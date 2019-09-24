@@ -1,4 +1,4 @@
-CS 98 Hack 1
+# CS 98 Hack 1
 
 ### Tutorials Followed
 - https://nitratine.net/blog/post/encryption-and-decryption-in-python/
