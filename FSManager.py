@@ -141,10 +141,11 @@ class FSManager:
 			print( "Unable to commit, couldn't import metadata." )
 			return
 
-		for f in self.data[ 'systems' ][ fsName ][ 'files' ]:
+		# encrypt each file
+		for fAddr in self.data[ 'systems' ][ fsName ][ 'files' ]:
 			# check file exists
-			if not os.path.exists( f ):
-				print( "File '{}' not found.".format( f ) )
+			if not os.path.exists( fAddr ):
+				print( "File '{}' not found.".format( fAddr ) )
 				return
 			else:
 				# assign a globally unique ID to the file (32 chars)
@@ -156,12 +157,26 @@ class FSManager:
 					uuid = "{}".format( hex( random.getrandbits( 128 ) ) )[ 2 : ]
 					if uuid not in uuids:
 						break
-				self.data[ 'systems' ][ fsName ][ 'files' ][ f ] = uuid
-				print( uuid )
-		
+				self.data[ 'systems' ][ fsName ][ 'files' ][ fAddr ] = uuid
+
+			# encrypt file using filesystem's key
+			with open( fAddr, "rb") as f:
+				bData = f.read()
+			
+			fHandler = Fernet( self.data[ 'systems' ][ fsName ][ 'key' ] )
+			encryptedBData = fHandler.encrypt(bData)
+
+			# write encrypted binary to shadow file in crypt
+			with open( "crypt/{}".format( uuid ), "wb+") as cryptFile:
+				cryptFile.write(encryptedBData)
+
+
 		# write systems
 		self.saveSystems()
  
+	
+
+
 
 
 				
