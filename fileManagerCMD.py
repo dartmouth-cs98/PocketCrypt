@@ -12,7 +12,7 @@ def printHelp( command=None):
 	elif command == "add":
 		print( "> Add a file to a file system using the commmand \"add <file> to <system>\"." )
 	elif command == "update":
-		print( "> Update an encrypted file system using the commmand \"add <file> to <system>\"." )
+		print( "> Update an encrypted file system using the commmand \"update <system>\"." )
 	elif command == "watch":
 		print( "> Contually watch and update a file system using the commmand \"watch <system>\". \"q\" to exit." )
 	elif command == "import":
