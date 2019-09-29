@@ -1,4 +1,9 @@
+#!/usr/bin/env python
+
 from FSManager import FSManager
+import os
+import argparse
+import sys
 from cryptography.fernet import Fernet
 
 def printHelp( command=None):
@@ -26,94 +31,104 @@ def printHelp( command=None):
 	else:
 		print( "> Read the readme, silly! The commands are create, show, encrypt, add, update, watch, import, clear, and remove. Type any of these into the prompt to see more help for each one!" )
 
-fsm = FSManager( "metadata.json" )
+class PocketCrypt():
+	
+	def __init__( self ):
+
+		# get address for metadata file (TODO: ENV VAR will distiguish from default location)
+		metadataAddr = "metadata.json"
+
+		# check metadata file exists
+		exists = os.path.exists( metadataAddr )
+		if not exists:
+			cfrm = input( "Unable to locate metadata file '{}'. Create one? (Y/n)\n".format( metadataAddr ) )
+			if str.lower( cfrm ) != "y":
+				print( "> Operation aborted." )
+			else:
+				try:
+					open( metadataAddr, "w" ).close()
+				except IOError:
+					print ( "> Unable to create metadata file." )
+
+		self.fsm = FSManager( metadataAddr )
+		print( "> Initialized PocketCrypt with metadata file: '{}'".format( metadataAddr ))
+
+		parser = argparse.ArgumentParser( description='PocketCrypt!', usage='''pc <command> [<args>]''')
+		parser.add_argument( 'command', help='Subcommand to run' )
+		args = parser.parse_args( sys.argv[ 1 : 2 ] )
+		if not hasattr( self, args.command ):
+			print( '> Unrecognized command.' )
+			parser.print_help()
+			exit( 1 )
+		getattr( self, args.command )()
 
 
-while True:
-	i = input( "> Awaiting command...\n" )
-	if str.lower( i ) == "q":
-		fsm.saveSystems()
-		print( "> Safely quit." )
-		break
-	elif str.lower( i ) == "help":
-		printHelp()
-	else: #command
-		spl = i.split( ' ' )
-		if spl[ 0 ] == "create":
-			if len( spl ) != 2:
-				print( "> Invalid command format." )
-				printHelp( "create" )
-			else:
-				fsm.createFileSystem( spl[ 1 ] )
-		
-		elif spl[ 0 ] == "show":
-			if spl == [ 'show', 'all', 'systems' ]:
-				fsm.showAllSystems()
-			elif len( spl ) == 2:
-				fsm.showFileSystem( spl[ 1 ] )
-			else:
-				print( "> Invalid command format." )
-				printHelp( "show" )
-		
-		elif spl[ 0 ] == "encrypt":
-			if len( spl ) != 2:
-				print( "> Invalid command format." )
-				printHelp( "encrypt" )
-			else:
-				fsm.encryptFileSystem( spl[ 1 ] )
+	def create( self ):
+		parser = argparse.ArgumentParser( description='Create a File System' )
+		parser.add_argument( 'fsName', help='Name of File System' )
+		args = parser.parse_args( sys.argv[ 2 : ] )
+		self.fsm.createFileSystem( args.fsName )
 
-		elif spl[ 0 ] == "add":
-			if len( spl ) != 4 or spl[ 2 ] != "to":
-				print( "> Invalid command format." )
-				printHelp( "add" )
-			else:
-				fsm.addFileToSystem( spl[ 3 ], spl[ 1 ] )
-		
-		elif spl[ 0 ] == "remove":
-			if len( spl ) != 4 or spl[ 2 ] != "from":
-				print( "> Invalid command format." )
-				printHelp( "remove" )
-			else:
-				fsm.removeFileFromSystem( spl[ 3 ], spl[ 1 ] )
+	def equip( self ):
+		parser = argparse.ArgumentParser( description='Eqiup a File System' )
+		parser.add_argument( 'fsName', help='Name of File System' )
+		args = parser.parse_args( sys.argv[ 2 : ] )
+		print( "equipping {}".format( args.fsName ) )
+		self.fsm.equipFileSystem( args.fsName )
 
-		elif spl[ 0 ] == "update":
-			if len( spl ) != 2:
-				print( "> Invalid command format." )
-				printHelp( "update" )
-			else:
-				fsm.updateFileSystem( spl[ 1 ] )
+	def show( self ):
+		parser = argparse.ArgumentParser( description='Show details of equipped File System' )
+		parser.add_argument( 'fsName', help='Name of File System' )
+		args = parser.parse_args( sys.argv[ 2 : ] )
+		print( "showing {}".format( args.fsName ) )
+		# fsm.showFileSystem( spl[ 1 ] )
 
-		elif spl[ 0 ] == "watch":
-			if len( spl ) != 2:
-				print( "> Invalid command format." )
-				printHelp( "update" )
-			else:
-				fsm.watchFileSystem( spl[ 1 ] )
-		
-		elif spl[ 0 ] == "import":
-			if len( spl ) != 2:
-				print( "> Invalid command format." )
-				printHelp( "import" )
-			else:
-				fsm.importFileSystem( spl[ 1 ] )
+	def encrypt( self ):
+		parser = argparse.ArgumentParser( description='Encrypt an entire File System' )
+		parser.add_argument( 'fsName', help='Name of File System' )
+		args = parser.parse_args( sys.argv[ 2 : ] )
+		print( "encrypting {}".format( args.fsName ) )
+		# fsm.encryptFileSystem( spl[ 1 ] )
 
-		elif spl[ 0 ] == "clear":
-			if spl == [ 'clear', 'all', 'data' ]:
-				fsm.clearAllData()
-			elif len( spl ) == 2:
-				fsm.clearFilesFromSystem( spl[ 1 ] )
-			else:
-				print( "> Invalid command format." )
-				printHelp( "clear" )
+	def add( self ):
+		parser = argparse.ArgumentParser( description='Add a file to the currently equipped File System.' )
+		parser.add_argument( 'fileName', help='Address of file to add' )
+		args = parser.parse_args( sys.argv[ 2 : ] )
+		print( "adding {} to file system".format( args.fileName )  )
+		# fsm.addFileToSystem( spl[ 3 ], spl[ 1 ] )
 
-		else:
-			print( "> Command not recognized. Type \"help\" for help!" )
-		
+	def remove( self ):
+		parser = argparse.ArgumentParser( description='Remove a file from the currently equipped File System.' )
+		parser.add_argument( 'fileName', help='Address of file to remove' )
+		args = parser.parse_args( sys.argv[ 2 : ] )
+		print( "removing {} to file system".format( args.fileName )  )
+		# fsm.removeFileFromSystem( spl[ 3 ], spl[ 1 ] )
 
+	def update( self ):
+		parser = argparse.ArgumentParser( description='Check the equipped File System and re-encrypt and sync any files that are out-of-date.' )
+		parser.parse_args( sys.argv[ 2 : ] )
+		# fsm.updateFileSystem( spl[ 1 ] )
+
+	def watch( self ):
+		parser = argparse.ArgumentParser( description='Continually watch all files in equipped File System and re-encrypt and sync as they are modified.' )
+		parser.parse_args( sys.argv[ 2 : ] )
+		# fsm.watchFileSystem( spl[ 1 ] )
+
+
+	def decrypt( self ):
+		parser = argparse.ArgumentParser( description='Import a File System from the cloud and decrypt it.' )
+		parser.add_argument( 'fsName', help='Name of File System to decrypt' )
+		parser.parse_args( sys.argv[ 2 : ] )
+		# fsm.importFileSystem( spl[ 1 ] )
+		# TODO: Add option for File System destination
 	
 
+	def clear( self ):
+		parser = argparse.ArgumentParser( description='Clear all files from a given File System.' )
+		parser.add_argument( 'fsName', help='Name of File System to clear' )
+		parser.parse_args( sys.argv[ 2 : ] )
+		# fsm.clearFilesFromSystem( spl[ 1 ] )
 
 
-
-
-
+if __name__ == '__main__':
+	PocketCrypt()
