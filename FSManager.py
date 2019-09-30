@@ -2,9 +2,11 @@ import json
 import random
 import msvcrt
 import os
-import keyboard
+import shutil
 from datetime import datetime
 import time
+from tinydb import TinyDB, Query
+from tinydb.operations import set as tinySet
 from cryptography.fernet import Fernet
 
 # helper function to see if 'q' is in keyboard buffer
@@ -17,243 +19,232 @@ def qInBuffer():
 class FSManager:
 
 	def __init__( self, metadataAddr ):
-		self.metadataAddr = metadataAddr
-		self.data = self.importMetadata()
+		self.db = TinyDB( metadataAddr )
+		self.db.table( 'systems' )
+		self.db.table( 'settings' )
+	
 
-	
-	# safe way to import metadata
-	def importMetadata( self ):
-		# check metadata file exists
-		exists = os.path.exists( self.metadataAddr )
-		if not exists:
-			cfrm = input( "Unable to locate metadata file '{}'. Create one? (Y/n)\n".format( self.metadataAddr ) )
-			if str.lower( cfrm ) != "y":
-				print( "> Operation aborted." )
-				return
-			try:
-				data_file = open( self.metadataAddr, "w" )
-				data_file.close()
-			except IOError:
-				print ( "> Unable to create metadata file." )
-				return None
-		
-		# check metadata file has content to protect from JSON errors
-		if os.stat( self.metadataAddr ).st_size == 0:
-			if exists:
-				print( "> Initializing metadata file." )
-			try:
-				data_file = open( self.metadataAddr, "w" )
-			except IOError:
-				print ( "> Unable to initialize metadata file." )
-				return None
-			with data_file:
-				data_file.write( json.dumps( { "systems": {} }, indent=3 ) )
-
-		# decode the JSON
-		try:
-			data_file = open( self.metadataAddr, "r+" )
-		except IOError:
-			print ( "> Unable to read metadata." )
-			return None
-		with data_file:
-			try:
-				data = json.load( data_file )
-			except Exception:
-				print( "> Error decoding metadata file." )
-				return None
-			return data
-	
-	
 	# create new file system and save it
-	def createFileSystem( self, fsName ):
+	def createFileSystem( self, fsName, equip ):
 
-		# import metadata
-		newData = self.importMetadata()
-		if newData is None:
-			print( "> Unable to import metadata." )
-			return
-		
-		# check if already exists
-		if fsName in self.data[ 'systems' ]:
-			cfrm = input( "File system '{}' already exists, overwrite cached data? (Y/n)\n".format( fsName ) )
-			if str.lower( cfrm ) != "y":
+		# check already exists
+		info = self.getSystemInfo( fsName )
+		if info is not None:
+			cfrm = input( "> File system '{}' already exists, overwrite saved data? (Yes/no)\n".format( fsName ) )
+			if str.lower( cfrm ) != "yes":
 				print( "> Operation aborted." )
-				return
+				return			
 
-		# create new filesystem in memory
-		self.data[ 'systems' ][ fsName ] = {
-			'files': {},
+		# create new filesystem
+		systems = self.db.table( 'systems' )
+		System = Query()
+		systems.upsert( {
+			'name': fsName,
 			'key': Fernet.generate_key().decode() # UTF-8
-			}
-
+		}, System.name == fsName )
 		print( "> File system '{}' created.".format( fsName ) )
 
-		# save systems
-		self.saveSystems()
+		# equip if desired
+		if equip:
+			self.equipFileSystem( fsName )
+		# print( "> Unable to create system '{}'.".format( args.fsName ) )
 
-	# show all data about a specific file system
-	def showFileSystem( self, fsName ):
-		# sync local -> file -> local
-		self.saveSystems()
-		self.data = self.importMetadata()
-		if self.data is None:
-			print( "> Unable to commit, couldn't import metadata." )
-			return
+	# equip a given file system
+	def equipFileSystem( self, fsName ):
 
-		# check file system exists
-		if fsName not in self.data[ 'systems' ]:
-			cfrm = input( "System '{}' doesn't exist. Create it? (Y/n)\n".format( fsName ) )
+		# ensure existence of file system
+		info = self.getSystemInfo( fsName )
+		if info is None:
+			cfrm = input( "> System '{}' not found. Create and equip it? (Y/n)\n".format( fsName ) )
 			if str.lower( cfrm ) == "y":
-				self.createFileSystem( fsName )
+				self.createFileSystem( fsName, False )
+			else:
+				print( "> Operation aborted" )
 				return
 		
-		# print data
-		fsData = self.data[ 'systems' ][ fsName ]
-		print( "> *** {} ***".format( fsName ) )
-		print( ">  - key: {}".format( fsData[ 'key' ] ) )
-		print( ">  - files:" )
-		for fileName, fileData in fsData[ 'files' ].items():
-			if fileData:
-				fMessage = "encrypted as '{}' at {} UTC".format( fileData[ 'uuid' ],
-															 datetime.fromtimestamp( fileData[ 'time' ] ) )
-			else:
-				fMessage = "not yet encrypted"
-			print( ">    - {} {}".format( fileName, fMessage) )
+		# update equipped system
+		self.setSetting( 'equipped', fsName )
 
-	def showAllSystems( self ):
-		# sync local -> file -> local
-		self.saveSystems()
-		self.data = self.importMetadata()
-		if self.data is None:
-			print( "> Unable to commit, couldn't import metadata." )
-			return
+		print( "> Equipped '{}'".format( fsName ) )
+
+	# get the info for a given file system
+	def getSystemInfo( self, fsName ):
+		# all systems are documents with name: ...
+		systems = self.db.table( 'systems' )
+		System = Query()
+		res = systems.search( System.name == fsName )
+		if len( res ) != 1 or 'name' not in res[ 0 ]:
+			return None 
+		return res[ 0 ]
+
+	# get the value of a given internal setting
+	def getSetting( self, key ):
+
+		# all settings are documents with key: ..., value: ...
+		settings = self.db.table( 'settings' )
+		Setting = Query()
+		res = settings.search( Setting.key == key )
+		if len( res ) != 1 or 'key' not in res[ 0 ] or 'value' not in res[ 0 ]:
+			return None 
+		return res[ 0 ][ 'value' ]
+
+	# set the value of a given internal setting
+	def setSetting( self, key, value ):
+		# all settings are documents with key: ..., value: ...
+		settings = self.db.table( 'settings' )
+		Setting = Query()
+		settings.upsert( { 'key': key, 'value': value }, Setting.key == key )
+
+	# get the equipped system and ensure it exists
+	def getEquippedSystem( self ):
 		
-		for fsName, fsData in self.data[ 'systems' ].items():
-			print( "> *** {} ***".format( fsName ) )
-			print( ">  - key: {}".format( fsData[ 'key' ] ) )
-			print( ">  - files:" )
-			for fileName, fileData in fsData[ 'files' ].items():
-				if fileData:
-					fMessage = "encrypted as '{}' at {} UTC".format( fileData[ 'uuid' ],
-																datetime.fromtimestamp( fileData[ 'time' ] ) )
-				else:
-					fMessage = "not yet encrypted"
-				print( "   - {} {}".format( fileName, fMessage) )
-
-	# update metadata file to match given list of file systems= 
-	def saveSystems( self ):
-
-		# grab data metadata file
-		existingData = self.importMetadata()
-		if existingData is None:
-			print( "> Can't save, unable to import existing metadata." )
+		# check settings table for equipped system
+		equippedSystem = self.getSetting( 'equipped' )
+		if equippedSystem is None:
+			print( "> No file system equipped. Equip one using the 'equip' command!" )
 			return
-
-		# make appropriate changes to existing systems
-		for fs in existingData[ 'systems' ]:
-			if fs in self.data[ 'systems' ]:
-				existingData[ 'systems' ][ fs ] = self.data[ 'systems' ][ fs ] # overwrite with local changes
-		
-		# tack on any new systems
-		for fs, data in self.data[ 'systems' ].items():
-			existingData[ 'systems' ][ fs ] = data
-
-		# overwrite metadata file
-		with open( self.metadataAddr, "w" ) as data_file:
-			data_file.write( json.dumps( existingData, indent=3 ) )
-
-		# print( "> Systems saved." )
-
-
-	# add a file address to a given system
-	def addFileToSystem( self, fsName, addr ):
-
-		# sync local -> file -> local
-		self.saveSystems()
-		self.data = self.importMetadata()
-		if self.data is None:
-			print( "> Unable to add file, couldn't import metadata." )
-			return
-
-		if fsName not in self.data[ 'systems' ]:
-			cfrm = input( "System '{}' doesn't exist. Create it? (Y/n)\n".format( fsName ) )
-			if str.lower( cfrm ) == "y":
-				self.createFileSystem( fsName )
-		else:
-			if addr not in self.data[ 'systems' ][ fsName ][ 'files' ]:
-				self.data[ 'systems' ][ fsName ][ 'files' ][ addr ] = {} # data assigned during encrypting
-			print( "> File '{}' added to system '{}'.".format( addr, fsName ) )
-			# save metadata
-			self.saveSystems()
-
-	def removeFileFromSystem( self, fsName, addr ):
-		# sync local -> file -> local
-		self.saveSystems()
-		self.data = self.importMetadata()
-		if self.data is None:
-			print( "> Unable to remove file, couldn't import metadata." )
-			return
-
-		if fsName not in self.data[ 'systems' ]:
-			print( "> System '{}' doesn't exist.\n".format( fsName ) )
-			return
-		else:
-			if addr not in self.data[ 'systems' ][ fsName ][ 'files' ]:
-				print( "> File '{}' not found in file system '{}'".format( addr, fsName ) )
-			else:
-				del self.data[ 'systems' ][ fsName ][ 'files' ][ addr ]
-				
-			# save metadata
-			self.saveSystems()
-
 	
-	# encrypt an entire file system or a single file from a file system
-	def encryptFileSystem( self, fsName, fileName=None ):
+		# ensure existence of system
+		systems = self.db.table( 'systems' )
+		System = Query()
+		if not systems.contains( System.name == equippedSystem ):
+			cfrm = input( "> Equipped system no longer exists. Create and equip it? (Y/n)\n" )
+			if str.lower( cfrm ) == "y":
+				self.createFileSystem( equippedSystem, True )
+			return equippedSystem
+		return equippedSystem
 
-		# sync local -> file -> local
-		self.saveSystems()
-		self.data = self.importMetadata()
-		if self.data is None:
-			print( "> Unable to commit, couldn't import metadata." )
+	# show all data about the eqquiped file system
+	def showEquippedSystem( self ):
+
+		# get equipped system
+		equippedSystem = self.getEquippedSystem()
+		
+		# get data for equipped system
+		info = self.getSystemInfo( equippedSystem )
+
+		if info is None:
 			return
 
-		# encrypt each file
-		if fsName not in self.data[ 'systems' ]:
-			cfrm = input( "System '{}' doesn't exist. Create it? (Y/n)\n".format( fsName ) )
-			if str.lower( cfrm ) == "y":
-				self.createFileSystem( fsName )
-				return
-			else:
-				print( "> Operation aborted.")
-				return
+		print( json.dumps( info, indent=1 )[ 1: -1 ] )
+		# print data
+		# print( "> *** {} ***".format( fsName ) )
+		# print( ">  - key: {}".format( fsData[ 'key' ] ) )
+		# print( ">  - files:" )
+		# for fileName, fileData in fsData[ 'files' ].items():
+		# 	if fileData:
+		# 		fMessage = "encrypted as '{}' at {} UTC".format( fileData[ 'uuid' ],
+		# 													 datetime.fromtimestamp( fileData[ 'time' ] ) )
+		# 	else:
+		# 		fMessage = "not yet encrypted"
+		# 	print( ">    - {} {}".format( fileName, fMessage) )
 
-		filesToEncrypt = [ fileName ] if fileName is not None else self.data[ 'systems' ][ fsName ][ 'files' ]
-		if filesToEncrypt:
-			for fAddr in filesToEncrypt:
+	# show all data about all systems
+	def showAllSystems( self ):
+		systems = self.db.table( 'systems' )
+		print( json.dumps( systems.all(), indent=1 ) )
+
+	# add a file to the equipped system
+	def addFileToEquippedSystem( self, addr ):
+
+		# get equipped system
+		equippedSystem = self.getEquippedSystem()
+
+		# pull current files
+		info = self.getSystemInfo( equippedSystem )
+		if info is None:
+			return
+		files = info[ 'files' ] if 'files' in info else {}
+
+		# ensure non-existence of file
+		if addr in files:
+			print("> File '{}' already exists in system '{}'".format( addr, equippedSystem ) )
+			return
+		
+		# append file locally
+		files[ addr ] = {}
+		
+		# save to database
+		System = Query()
+		self.db.table( 'systems' ).update( { 'files': files }, System.name == equippedSystem )
+
+		print( "> File '{}' added to system '{}'.".format( addr, equippedSystem ) )
+		
+	def removeFileFromEquippedSystem( self, addr ):
+
+		# get equipped system
+		equippedSystem = self.getEquippedSystem()
+		info = self.getSystemInfo( equippedSystem )
+
+		# ensure existence of file
+		files = info[ 'files' ] if 'files' in info else {}
+		if addr not in files:
+			print( "> File '{}' not found in system '{}'".format( addr, equippedSystem ) )
+			return
+		
+		# remove locally
+		del files[ addr ]
+
+		# save to database
+		System = Query()
+		self.db.table( 'systems' ).update( { 'files': files }, System.name == equippedSystem )
+	
+	# encrypt currently equipped file system (or a single file)
+	def encryptEquippedFileSystem( self, update=False ):
+
+		# get files for equipped system
+		equippedSystem = self.getEquippedSystem()
+		if equippedSystem is None:
+			return
+		info = self.getSystemInfo( equippedSystem )
+		if info is None:
+			print( "> Error: No info found for system '{}'".format( equippedSystem ) )
+		files = [ fName for fName, _ in info[ 'files' ].items() ] if 'files' in info else []
+		filesInfo = info[ 'files' ] if 'files' in info else []
+		if len( files ) == 0:
+			print( "> No files to encrypt! Add some using the 'add' command." )
+			return
+
+		# get existing filename UUIDs
+		existingUUIDs = self.getSetting( 'uuids' )
+		if existingUUIDs is None:
+			existingUUIDs = []
+
+		# encrypt each file (if appropriate)
+		for fAddr in files:
+			# determine if appropriate
+			encryptIt = False
+			if update:
+				if 'time' in filesInfo[ fAddr ]:
+					if os.path.getmtime( fAddr ) > filesInfo[ fAddr ][ 'time' ]:
+						print( "> Change detected in '{}', re-encrypting file.".format( fAddr ) )
+						encryptIt = True
+			else:
+				encryptIt = True
+
+			if encryptIt:
 				# check file exists
 				if not os.path.exists( fAddr ):
 					print( "> File '{}' not found.".format( fAddr ) )
 					return
+					
 				# assign a globally unique ID to the file (32 chars)
-				if 'uuid' in self.data[ 'systems' ][ fsName ][ 'files' ][ fAddr ]:
-					uuid = self.data[ 'systems' ][ fsName ][ 'files' ][ fAddr ][ 'uuid' ]
+				if 'uuid' in filesInfo[ fAddr ]:
+					uuid = filesInfo[ fAddr ][ 'uuid' ]
 				else:
-					uuids = []
-					for __, data in self.data[ 'systems' ].items():
-						for __, id in data[ 'files' ].items():
-							uuids.append( id )
 					while True:
 						uuid = "{}".format( hex( random.getrandbits( 128 ) ) )[ 2 : ]
-						if uuid not in uuids:
+						if uuid not in existingUUIDs:
 							break
-					self.data[ 'systems' ][ fsName ][ 'files' ][ fAddr ][ 'uuid' ] = uuid
-
+				
 				# encrypt file using filesystem's key
+				if 'key' not in info:
+					print( "> Error: File system '{}' doesn't have a key".format( equippedSystem ) )
+					return
+				key = info[ 'key' ]
 				with open( fAddr, "rb") as f:
 					bData = f.read()
-				
-				key = self.data[ 'systems' ][ fsName ][ 'key' ]
-				fHandler = Fernet( key)
+				fHandler = Fernet( key )
 				encryptedBData = fHandler.encrypt(bData)
 
 				# write encrypted binary to shadow file in crypt
@@ -264,73 +255,74 @@ class FSManager:
 
 				print( "> File '{}' encrypted as '{}' using key '{}'.".format( fAddr, uuid, key ) )
 
-				# take timestamp and record encryption time in seconds
-				self.data[ 'systems' ][ fsName ][ 'files' ][ fAddr ][ 'time' ] = round( time.time() )
-		else:
-			print( "> No files to encrypt! Add some using the 'add' command." )
-		# write systems
-		self.saveSystems()
- 
+				# take timestamp and record in seconds
+				filesInfo[ fAddr ][ 'time' ] = round( time.time() )
 
-	# update a file system by checking its watch-list
-	def updateFileSystem( self, fsName ):
-
-		# sync local -> file -> local
-		self.saveSystems()
-		self.data = self.importMetadata()
-		if self.data is None:
-			print( "> Unable to update file systems, couldn't import metadata." )
-			return
+				# record UUID and add to list of UUIDs
+				existingUUIDs.append( uuid )
+				if 'uuid' in filesInfo[ fAddr ]: # remove old uuid from master list
+					oldUUID = filesInfo[ fAddr ][ 'uuid' ]
+					del( existingUUIDs[ existingUUIDs.index( oldUUID ) ] )
+				filesInfo[ fAddr ][ 'uuid' ] = uuid
 		
-		if fsName not in self.data[ 'systems' ]:
-			print( "> System not found." )
-
-		# if any file is newer than its encryption date, re-encrypt it
-		for fAddr, info in self.data[ 'systems' ][ fsName ][ 'files' ].items():
-			if info:
-				lastModified = os.path.getmtime( fAddr )
-				encrypted = info[ 'time' ]
-				if lastModified > encrypted:
-					print( "> Change detected in '{}', re-encrypting file.".format( fAddr ) )
-					self.encryptFileSystem( fsName, fAddr )
-			else:
-				cfrm = input( "File '{}' not yet encrypted. Encrypt file system '{}' now? (Y/n)\n".format( fAddr, fsName ) )
-				if str.lower( cfrm ) == "y":
-					self.encryptFileSystem( fsName )
-					return
+		# update database
+		self.setSetting( 'uuids', existingUUIDs )
+		systems = self.db.table( 'systems' )
+		System = Query()
+		systems.update( { 'files': filesInfo }, System.name == equippedSystem )
 
 	# continually watch and update a filesystem
-	def watchFileSystem( self, fsName ):
+	def watchEquippedFileSystem( self ):
+		equippedSystem = self.getEquippedSystem()
 		while True:
 			if qInBuffer():
-				print( "> No longer watching '{}'.".format( fsName ) )
+				print( "> No longer watching '{}'.".format( equippedSystem ) )
 				break
-			self.updateFileSystem( fsName )
+			self.encryptEquippedFileSystem( True )
 			time.sleep( 1 )
-			
 
 	# import a filesystem from crypt
-	def importFileSystem( self, fsName ):
-		# import all metadata
-		self.data = self.importMetadata()
-		if self.data is None:
-			print( "> Unable to update file systems, couldn't import metadata." )
+	def decryptEquippedFileSystem( self, dest="./" ):
+
+		# identify files
+		equippedSystem = self.getEquippedSystem()
+		info = self.getSystemInfo( equippedSystem )
+		if info is None:
+			return
+		filesInfo = info[ 'files' ] if 'files' in info else []
+		if len( filesInfo ) == 0:
+			print( "> No files to decrypt! Add some using the 'add' command." )
 			return
 		
-		# identify files in filesystem
-		files = self.data[ 'systems' ][ fsName ][ 'files' ]
-		key = self.data[ 'systems' ][ fsName ][ 'key' ]
-		for fileName, fileData in files.items():
+		# prepare destination
+		if dest[ -1 ] != '/': # add in '/'
+			dest += '/'
+
+		# make sure destination path exists
+		if not os.path.exists( dest ):
+			print( "> Error: Destination path doesn't exist" )
+			return
+		
+		# make folder for system
+		dest +=  "{}/".format( equippedSystem )
+		if os.path.exists( dest ):
+			cfrm = input( "Folder '{}' already exists. Overwrite it? (Yes/n)\n".format( dest ) )
+			if str.lower( cfrm ) != "yes":
+				print( "> Operation aborted." )
+				return
+			else:
+				shutil.rmtree( dest )
+		os.mkdir( dest )
+				
+		# import each file
+		key = info[ 'key' ]
+		for fileName, fileData in filesInfo.items():
 			uuid = fileData[ 'uuid' ]
-			print( "> Creating {} by decrypting {} with key {}".format( fileName, uuid, key ) )
-			if os.path.exists( fileName ):
-				cfrm = input( "File '{}' already exists. Overwrite it? (Y/n)\n".format( fileName ) )
-				if str.lower( cfrm ) != "y":
-					print( "> Operation aborted." )
-					continue
+			print( "> Creating {}/{} by decrypting {}".format( dest, fileName, uuid ) )
+			
 			# import encrypted file from the crypt
 			try:
-				encryptedFile = open( "crypt/{}".format( uuid ), "rb")
+				encryptedFile = open( "crypt/{}".format( uuid ), "rb" )
 			except Exception:
 				print( "> Unable to open encrypted file." )
 				return
@@ -340,29 +332,43 @@ class FSManager:
 			# decrypt it using key
 			fHandler = Fernet( key )
 			decryptedBData = fHandler.decrypt(bData)
-
+			
 			# write encrypted binary to plaintext file
-			with open( fileName, "wb+") as plainFile:
+			with open( "{}{}".format( dest, fileName ), "wb+") as plainFile:
 				plainFile.write( decryptedBData )
 
-	
+	# purge the database
 	def clearAllData( self ):
-		self.data = { "systems": {} }
-		open( self.metadataAddr, "w" ).close()
+		self.db.purge()
 	
-	def clearFilesFromSystem( self, fsName ):
-		# sync local -> file -> local
-		self.saveSystems()
-		self.data = self.importMetadata()
-		if self.data is None:
-			print( "> Unable to update file systems, couldn't import metadata." )
-			return
+	# delete all content associated with a filesystem
+	def deleteFileSystem( self, fsName ):
 		
-		if fsName not in self.data[ 'systems' ]:
-			print( "> System not found." )
+		# verify existence
+		info = self.getSystemInfo( fsName )
+		if info is None:
+			cfrm = input( "> File system '{}' not found".format( fsName ) )
+			if str.lower( cfrm ) != "yes":
+				print( "> Operation aborted" )
+				return
 		
-		# clear files
-		self.data[ 'systems' ][ fsName ][ 'files' ] = {}
+		# remove document from database
+		System = Query()
+		self.db.table( 'systems' ).remove( System.name == fsName )
 
-		# save systems
-		self.saveSystems()
+		# delete associated encrypted files
+		uuidsToDelete = [ info[ 'files' ][ fileName ].get( 'uuid', None ) for fileName in info[ 'files' ] ] if 'files' in info else []
+		existingUUIDs = self.getSetting( 'uuids' )
+		for uuid in uuidsToDelete:
+			try: # delete the file in the crypt
+				os.remove( "crypt/{}".format( uuid ) )
+			except:
+				pass
+			if uuid in existingUUIDs:
+				del existingUUIDs[ existingUUIDs.index( uuid ) ]
+			else:
+				print( "> Warning... there wasn't a UUID to delete..." )		
+		
+		# update db with new list of UUIDs
+		self.setSetting( 'uuids', existingUUIDs )
+			

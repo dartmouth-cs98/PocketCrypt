@@ -66,69 +66,71 @@ class PocketCrypt():
 	def create( self ):
 		parser = argparse.ArgumentParser( description='Create a File System' )
 		parser.add_argument( 'fsName', help='Name of File System' )
+		parser.add_argument( '-e', '--equip', action= 'store_true', help='Include this flag to automatically equip the file system after creation' )
 		args = parser.parse_args( sys.argv[ 2 : ] )
-		self.fsm.createFileSystem( args.fsName )
+		self.fsm.createFileSystem( args.fsName, args.equip )
 
 	def equip( self ):
-		parser = argparse.ArgumentParser( description='Eqiup a File System' )
+		parser = argparse.ArgumentParser( description='Equip a File System' )
 		parser.add_argument( 'fsName', help='Name of File System' )
 		args = parser.parse_args( sys.argv[ 2 : ] )
-		print( "equipping {}".format( args.fsName ) )
 		self.fsm.equipFileSystem( args.fsName )
 
 	def show( self ):
 		parser = argparse.ArgumentParser( description='Show details of equipped File System' )
-		parser.add_argument( 'fsName', help='Name of File System' )
+		parser.add_argument( '-a', '--all', help='Include this flag to show all file systems' )
 		args = parser.parse_args( sys.argv[ 2 : ] )
-		print( "showing {}".format( args.fsName ) )
-		# fsm.showFileSystem( spl[ 1 ] )
+		if args.all:
+			self.fsm.showAllSystems()
+		else:
+			self.fsm.showEquippedSystem()
 
 	def encrypt( self ):
-		parser = argparse.ArgumentParser( description='Encrypt an entire File System' )
-		parser.add_argument( 'fsName', help='Name of File System' )
-		args = parser.parse_args( sys.argv[ 2 : ] )
-		print( "encrypting {}".format( args.fsName ) )
-		# fsm.encryptFileSystem( spl[ 1 ] )
+		parser = argparse.ArgumentParser( description='Encrypt the equipped File System' )
+		parser.parse_args( sys.argv[ 2 : ] )
+		self.fsm.encryptEquippedFileSystem()
 
 	def add( self ):
 		parser = argparse.ArgumentParser( description='Add a file to the currently equipped File System.' )
 		parser.add_argument( 'fileName', help='Address of file to add' )
 		args = parser.parse_args( sys.argv[ 2 : ] )
-		print( "adding {} to file system".format( args.fileName )  )
-		# fsm.addFileToSystem( spl[ 3 ], spl[ 1 ] )
+		self.fsm.addFileToEquippedSystem( args.fileName )
 
-	def remove( self ):
+	def rm( self ):
 		parser = argparse.ArgumentParser( description='Remove a file from the currently equipped File System.' )
 		parser.add_argument( 'fileName', help='Address of file to remove' )
 		args = parser.parse_args( sys.argv[ 2 : ] )
-		print( "removing {} to file system".format( args.fileName )  )
-		# fsm.removeFileFromSystem( spl[ 3 ], spl[ 1 ] )
+		self.fsm.removeFileFromEquippedSystem( args.fileName )
 
 	def update( self ):
 		parser = argparse.ArgumentParser( description='Check the equipped File System and re-encrypt and sync any files that are out-of-date.' )
 		parser.parse_args( sys.argv[ 2 : ] )
-		# fsm.updateFileSystem( spl[ 1 ] )
+		self.fsm.encryptEquippedFileSystem( True )
 
 	def watch( self ):
 		parser = argparse.ArgumentParser( description='Continually watch all files in equipped File System and re-encrypt and sync as they are modified.' )
 		parser.parse_args( sys.argv[ 2 : ] )
-		# fsm.watchFileSystem( spl[ 1 ] )
-
+		self.fsm.watchEquippedFileSystem()
 
 	def decrypt( self ):
 		parser = argparse.ArgumentParser( description='Import a File System from the cloud and decrypt it.' )
-		parser.add_argument( 'fsName', help='Name of File System to decrypt' )
-		parser.parse_args( sys.argv[ 2 : ] )
-		# fsm.importFileSystem( spl[ 1 ] )
-		# TODO: Add option for File System destination
+		parser.add_argument( '-d', '--destination', help='Destination of decrypted file system files')
+		args = parser.parse_args( sys.argv[ 2 : ] )
+		if args.destination:
+			self.fsm.decryptEquippedFileSystem( args.destination )
+		else:
+			self.fsm.decryptEquippedFileSystem()
 	
-
-	def clear( self ):
-		parser = argparse.ArgumentParser( description='Clear all files from a given File System.' )
+	def delete( self ):
+		parser = argparse.ArgumentParser( description='Clear all data for a given File System.' )
 		parser.add_argument( 'fsName', help='Name of File System to clear' )
-		parser.parse_args( sys.argv[ 2 : ] )
-		# fsm.clearFilesFromSystem( spl[ 1 ] )
+		args = parser.parse_args( sys.argv[ 2 : ] )
+		cfrm = input( "> Delete all content for system '{}'? This includes encrypted files in the crypt. (Yes/no)\n".format( args.fsName ) )
+		if str.lower( cfrm ) != "yes":
+			print( "> Operation aborted." )
+			return
+		self.fsm.deleteFileSystem( args.fsName )
 
-
+	# def pocket
 if __name__ == '__main__':
 	PocketCrypt()

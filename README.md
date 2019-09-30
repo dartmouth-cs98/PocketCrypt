@@ -113,15 +113,15 @@ foobarz
 Pretty sweet, huh! If at any time you need help, type `help` or a specific command into the prompt.
 
 
-## Tutorials Followed
+## Resources
+- https://github.com/msiemens/tinydb
 - https://nitratine.net/blog/post/encryption-and-decryption-in-python/
-
-## Other Resources
 - https://cryptography.io
 - https://stackoverflow.com/questions/2507808/how-to-check-whether-a-file-is-empty-or-not
 - https://stackoverflow.com/questions/24072790/detect-key-press-in-python
 - https://rosettacode.org/wiki/Keyboard_input/Flush_the_keyboard_buffer#Python
 - https://stackabuse.com/creating-and-deleting-directories-with-python/
+- https://chase-seibert.github.io/blog/2014/03/21/python-multilevel-argparse.html
 
 ## To Do
 - Improve management of how all metadata is loaded into memory each time (use mySQLite)
