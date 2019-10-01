@@ -8,6 +8,8 @@ import time
 from tinydb import TinyDB, Query
 from tinydb.operations import set as tinySet
 from cryptography.fernet import Fernet
+from google_handler import GoogleDriveHandler
+from dropbox_handler import DropboxHandler
 
 # helper function to see if 'q' is in keyboard buffer
 def qInBuffer():
@@ -215,8 +217,8 @@ class FSManager:
 			# determine if appropriate
 			encryptIt = False
 			if update:
-				if 'time' in filesInfo[ fAddr ]:
-					if os.path.getmtime( fAddr ) > filesInfo[ fAddr ][ 'time' ]:
+				if 'encrypted' in filesInfo[ fAddr ]:
+					if os.path.getmtime( fAddr ) > filesInfo[ fAddr ][ 'encrypted' ]:
 						print( "> Change detected in '{}', re-encrypting file.".format( fAddr ) )
 						encryptIt = True
 			else:
@@ -256,7 +258,7 @@ class FSManager:
 				print( "> File '{}' encrypted as '{}' using key '{}'.".format( fAddr, uuid, key ) )
 
 				# take timestamp and record in seconds
-				filesInfo[ fAddr ][ 'time' ] = round( time.time() )
+				filesInfo[ fAddr ][ 'encrypted' ] = round( time.time() )
 
 				# record UUID and add to list of UUIDs
 				existingUUIDs.append( uuid )
@@ -371,4 +373,131 @@ class FSManager:
 		
 		# update db with new list of UUIDs
 		self.setSetting( 'uuids', existingUUIDs )
+	
+	# push encrypted files for equipped file system to cloud backup service
+	def pushEquippedFileSystem( self, cloudService ):
+
+		# update file system
+		self.encryptEquippedFileSystem( True )
+
+		# initialize chosen session
+		if cloudService == 'drive':
+			# cloudHandler = GoogleDriveHandler()
+			print( "hi" )
+		elif cloudService == 'dropbox':
+
+			# get access token if exists
+			accessToken = self.getSetting( 'dbAccessToken' )
+			if accessToken is None:
+				print( "> Initializing dropbox for first time")
+			cloudHandler = DropboxHandler( accessToken )
 			
+			# update saved access code
+			self.setSetting( 'dbAccessCode', cloudHandler.access_token )
+		else:
+			print( "> Error: Unrecognized cloud service" )
+			return
+
+		# get UUIDs for equipped system
+		equippedSystem = self.getEquippedSystem()
+		if equippedSystem is None:
+			return
+		info = self.getSystemInfo( equippedSystem )
+		if info is None:
+			print( "> Error: No info found for system '{}'".format( equippedSystem ) )
+		filesInfo = info[ 'files' ] if 'files' in info else []
+		fileUUIDs = {}
+		for fileName, fInfo in filesInfo.items():
+			if 'uuid' in fInfo:
+				fileUUIDs[ fileName ] = fInfo[ 'uuid' ]
+
+		if len( fileUUIDs ) == 0:
+			print( "> No encrypted files to push! Encrypt the equipped filesystem using the 'encrypt' command." )
+			return
+
+		print( fileUUIDs )
+
+		# push and timestamp (seconds) each file being pushed
+		for fileName, uuid in fileUUIDs.items():
+
+			# push file
+			res = cloudHandler.upload_file( "crypt/{}".format( uuid ) )
+			if res is not None:
+				print("> Upload successful." )
+			else:
+				print(" Upload failed." )
+				return
+
+			filesInfo[ fileName ][ 'pushed' ] = round( time.time() )
+			print( "> Pushing '{}' ({}) to {}".format( uuid, fileName, cloudService ) )
+
+		# update the database
+		systems = self.db.table( 'systems' )
+		System = Query()
+		systems.update( { 'files': filesInfo }, System.name == equippedSystem )
+
+	# pull from the cloud the encrypted file system
+	def pullEquippedFileSystem( self, cloudService ):
+		# initialize chosen session
+		# if cloudService == 'drive':
+		# 	cloudHandler = GoogleDriveHandler()
+		# elif cloudService == 'dropbox':
+		# 	cloudHandler = DropboxHandler()
+		# else:
+		# 	print( "> Error: Unrecognized cloud service" )
+		# 	return
+
+		# get UUIDs for equipped system
+		equippedSystem = self.getEquippedSystem()
+		if equippedSystem is None:
+			return
+		info = self.getSystemInfo( equippedSystem )
+		if info is None:
+			print( "> Error: No info found for system '{}'".format( equippedSystem ) )
+		filesInfo = info[ 'files' ] if 'files' in info else []
+		fileUUIDs = {}
+		for fileName, fInfo in filesInfo.items():
+			if 'uuid' in fInfo:
+				fileUUIDs[ fileName ] = fInfo[ 'uuid' ]
+
+		if len( fileUUIDs ) == 0:
+			print( "> No encrypted files to pull! Encrypt the equipped filesystem using the 'encrypt' command and push it using 'push'" )
+			return
+
+		# pull and timestamp (seconds) each file being pushed
+		for fileName, uuid in fileUUIDs.items():
+
+			# ensure last encryption was before it was pushed
+			if 'encrypted' not in filesInfo[ fileName ]:
+				print( "> File system not yet encrypted! Encrypt it using 'encrypt' and push using 'push'." )
+				return
+			if ( filesInfo[ fileName ][ 'encrypted' ] >= filesInfo[ fileName ][ 'pushed' ] ):
+				cfrm = input( "> Looks like file '{}' was re-encrypted locally after it was pushed. Resync by pushing now?".format( fileName ) )
+				if str.lower( cfrm ) != "yes":
+					print( "> Operation aborted." )
+					return
+				self.pushEquippedFileSystem( cloudService )
+				return
+
+			# create crypt if doesn't exist
+			if not os.path.exists( 'crypt' ):
+				os.mkdir( 'crypt' )
+
+			# pull file
+			res = cloudHandler.download_file( uuid )
+			if res is not None:
+				print("> Download successful." )
+			else:
+				print(" Download failed." )
+				return
+
+			# timestamp with pulled time
+			filesInfo[ fileName ][ 'pulled' ] = round( time.time() )
+			print( "> Pulling '{}' ({}) from {}".format( uuid, fileName, cloudService ) )
+
+		# update the database
+		systems = self.db.table( 'systems' )
+		System = Query()
+		systems.update( { 'files': filesInfo }, System.name == equippedSystem )
+
+

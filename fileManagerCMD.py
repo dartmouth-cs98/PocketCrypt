@@ -4,6 +4,8 @@ from FSManager import FSManager
 import os
 import argparse
 import sys
+from google_handler import GoogleDriveHandler
+from dropbox_handler import DropboxHandler
 from cryptography.fernet import Fernet
 
 def printHelp( command=None):
@@ -103,7 +105,7 @@ class PocketCrypt():
 		self.fsm.removeFileFromEquippedSystem( args.fileName )
 
 	def update( self ):
-		parser = argparse.ArgumentParser( description='Check the equipped File System and re-encrypt and sync any files that are out-of-date.' )
+		parser = argparse.ArgumentParser( description='Check the local crypt for any files in the equipped File System and re-encrypt any files that are out-of-date.' )
 		parser.parse_args( sys.argv[ 2 : ] )
 		self.fsm.encryptEquippedFileSystem( True )
 
@@ -113,7 +115,7 @@ class PocketCrypt():
 		self.fsm.watchEquippedFileSystem()
 
 	def decrypt( self ):
-		parser = argparse.ArgumentParser( description='Import a File System from the cloud and decrypt it.' )
+		parser = argparse.ArgumentParser( description='Decrypt a File System from the local crypt.' )
 		parser.add_argument( '-d', '--destination', help='Destination of decrypted file system files')
 		args = parser.parse_args( sys.argv[ 2 : ] )
 		if args.destination:
@@ -130,6 +132,28 @@ class PocketCrypt():
 			print( "> Operation aborted." )
 			return
 		self.fsm.deleteFileSystem( args.fsName )
+
+	# def drive( self ):
+	# 	parser = argparse.ArgumentParser( description='Initialize and authenticate Google Drive connection.' )
+	# 	parser.parse_args( sys.argv[ 2 : ] )
+	# 	gdh = GoogleDriveHandler()
+		
+	# def dropbox( self ):
+	# 	parser = argparse.ArgumentParser( description='Initialize Dropbox connection.' )
+	# 	parser.parse_args( sys.argv[ 2 : ] )
+	# 	dbh = DropboxHandler()
+
+	def push( self ):
+		parser = argparse.ArgumentParser( description='Push encrypted files in equipped file system.' )
+		parser.add_argument( 'cloudService', choices=[ 'drive', 'dropbox' ], help='Which backup service to send the encrypted files to')
+		args = parser.parse_args( sys.argv[ 2 : ] )
+		self.fsm.pushEquippedFileSystem( args.cloudService )
+
+	def pull( self ):
+		parser = argparse.ArgumentParser( description='Pull encrypted files for equipped file system from given cloud service.' )
+		parser.add_argument( 'cloudService', choices=[ 'drive', 'dropbox' ], help='Which backup service to pull the encrypted files from')
+		args = parser.parse_args( sys.argv[ 2 : ] )
+		self.fsm.pullEquippedFileSystem( args.cloudService )
 
 	# def pocket
 if __name__ == '__main__':
