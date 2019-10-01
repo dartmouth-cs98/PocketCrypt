@@ -443,13 +443,22 @@ class FSManager:
 	# pull from the cloud the encrypted file system
 	def pullEquippedFileSystem( self, cloudService ):
 		# initialize chosen session
-		# if cloudService == 'drive':
-		# 	cloudHandler = GoogleDriveHandler()
-		# elif cloudService == 'dropbox':
-		# 	cloudHandler = DropboxHandler()
-		# else:
-		# 	print( "> Error: Unrecognized cloud service" )
-		# 	return
+		if cloudService == 'drive':
+			cloudHandler = GoogleDriveHandler()
+
+		elif cloudService == 'dropbox':
+			# get access token if exists
+			# accessToken = self.getSetting( 'dbAccessToken' )
+			# if accessToken is None:
+				# print( "> Initializing dropbox for first time")
+			# cloudHandler = DropboxHandler( accessToken )
+			cloudHandler = DropboxHandler()
+			
+			# update saved access code
+			self.setSetting( 'dbAccessCode', cloudHandler.access_token )
+		else:
+			print( "> Error: Unrecognized cloud service" )
+			return
 
 		# get UUIDs for equipped system
 		equippedSystem = self.getEquippedSystem()
@@ -488,7 +497,14 @@ class FSManager:
 				os.mkdir( 'crypt' )
 
 			# pull file
-			res = cloudHandler.download_file( uuid )
+			if cloudService == 'drive':
+				res = cloudHandler.download_file( uuid )
+			elif cloudService == 'dropbox':
+				res = cloudHandler.download_file( "crypt/", uuid )
+		else:
+			print( "> Error: Unrecognized cloud service" )
+			return
+			
 			if res is not None:
 				print("> Download successful." )
 			else:
