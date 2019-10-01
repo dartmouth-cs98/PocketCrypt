@@ -9,21 +9,26 @@ class DropboxHandler():
 	'''
 	Authenticates user, grabs access token, and creates new dbx object
 	'''
-	def __init__(self):
-		auth_flow = dropbox.oauth.DropboxOAuth2FlowNoRedirect(APP_KEY, APP_SECRET)	# request user input
-		authorize_url = auth_flow.start()
-		print("> 1. Go to: " + authorize_url)
-		print ("> 2. Click \"Allow\" (you might have to log in first).")
-		print (">. 3. Copy the authorization code.")
-		auth_code = input("> Enter the authorization code here: ").strip()
-
+	def __init__(self, db_access_token):
 		try:
-			oauth_result = auth_flow.finish(auth_code)
-			self.access_token = oauth_result.access_token	# initialize access token
-			self.dbx = dropbox.Dropbox(self.access_token)	# create dbx w/ token
+			self.access_token = db_access_token
+			self.dbx = dropbox.Dropbox(db_access_token)
+			print("> DropboxHandler initiated!")
 		except Exception as e:
-			print("> Error initializing DropboxHandler.")
-			print(e)
+			print("> Access token invalid.")
+			try:
+				auth_flow = dropbox.oauth.DropboxOAuth2FlowNoRedirect(APP_KEY, APP_SECRET)	# request user input
+				authorize_url = auth_flow.start()
+				print("> 1. Go to: " + authorize_url)
+				print ("> 2. Click \"Allow\" (you might have to log in first).")
+				print (">. 3. Copy the authorization code.")
+				auth_code = input("> Enter the authorization code here: ").strip()
+				oauth_result = auth_flow.finish(auth_code)
+				self.access_token = oauth_result.access_token	# initialize access token
+				self.dbx = dropbox.Dropbox(self.access_token)	# create dbx w/ token
+			except Exception as e:
+				print("> Error initializing DropboxHandler.")
+				print(e)
 
 	'''
 	Retrieve all filenames as a list
@@ -89,6 +94,8 @@ class DropboxHandler():
 			print("> Error downloading file from Dropbox to " + str(to_local_path))
 			print(e)
 			return None
+
+db_handler = DropboxHandler('tNRzKhT8LTAAAAAAAAAAMRSVfjKZdxsuFmv0R5hp1wA')
 
 # db_handler = DropboxHandler()
 # db_handler.upload_file("ee07a22a2938efcd83cf4abd4c412007.dms", "/ee07a22a2938efcd83cf4abd4c412007.dms")
