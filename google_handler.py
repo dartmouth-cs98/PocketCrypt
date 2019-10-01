@@ -71,19 +71,24 @@ class GoogleDriveHandler():
 		found = False
 		f_id = None
 		query_string = "name = '" + str(file_name) + "'"
-		response = self.service.files().list(q=query_string, spaces='drive', fields='nextPageToken, files(id, name)').execute()
-		for file in response.get('files', []):
-			if file.get('name') == str(file_name):
-				found = True
-				f_id = file.get('id')
-				break
-		if not found:
-			print("> File not found. Uploading now...")
-			return(self.upload_file(file_name, local_file_path))	# simple upload
-		if f_id != None:	# found
-			print("> File found. Deleting old version and uploading new file now...")
-			self.delete_file(f_id)	# delete other file first
-			return(self.upload_file(file_name, local_file_path))
+		try:
+			response = self.service.files().list(q=query_string, spaces='drive', fields='nextPageToken, files(id, name)').execute()
+			for file in response.get('files', []):
+				if file.get('name') == str(file_name):
+					found = True
+					f_id = file.get('id')
+					break
+			if not found:
+				print("> File not found. Uploading now...")
+				return(self.upload_file(file_name, local_file_path))	# simple upload
+			if f_id != None:	# found
+				print("> File found. Deleting old version and uploading new file now...")
+				self.delete_file(f_id)	# delete other file first
+				return(self.upload_file(file_name, local_file_path))
+		except Exception as e:
+			print("> Could not upsert file to Google Drive.")
+			print(e)
+			return None
 
 	'''
 	Download a file from GoogleDrive
