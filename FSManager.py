@@ -382,8 +382,8 @@ class FSManager:
 
 		# initialize chosen session
 		if cloudService == 'drive':
-			# cloudHandler = GoogleDriveHandler()
-			print( "hi" )
+			cloudHandler = GoogleDriveHandler()
+
 		elif cloudService == 'dropbox':
 
 			# get access token if exists
@@ -421,11 +421,14 @@ class FSManager:
 		for fileName, uuid in fileUUIDs.items():
 
 			# push file
-			res = cloudHandler.upload_file( "crypt/{}".format( uuid ) )
+			if cloudService == 'drive':
+				res = cloudHandler.upsert_file( uuid, "C:/Users/IAMFRANK/Documents/Workspace/cs98/crypt" )
+			else:
+				res = cloudHandler.upsert_file( uuid, "crypt/", uuid )
 			if res is not None:
 				print("> Upload successful." )
 			else:
-				print(" Upload failed." )
+				print("> Upload failed." )
 				return
 
 			filesInfo[ fileName ][ 'pushed' ] = round( time.time() )
