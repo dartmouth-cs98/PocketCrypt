@@ -9,7 +9,7 @@ class DropboxHandler():
 	'''
 	Authenticates user, grabs access token, and creates new dbx object
 	'''
-	def __init__(self, db_access_token):
+	def __init__(self, db_access_token=None):
 		try:
 			self.access_token = db_access_token
 			self.dbx = dropbox.Dropbox(db_access_token)
