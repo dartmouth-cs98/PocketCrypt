@@ -9,7 +9,7 @@ class DropboxHandler():
 	'''
 	Authenticates user, grabs access token, and creates new dbx object
 	'''
-	def __init__(self, db_access_token):
+	def __init__(self, db_access_token=None):
 		if db_access_token == None:
 			try:
 				auth_flow = dropbox.oauth.DropboxOAuth2FlowNoRedirect(APP_KEY, APP_SECRET)	# request user input
@@ -164,7 +164,7 @@ class DropboxHandler():
 			print(e)
 			return None
 
-db_handler = DropboxHandler("tNRzKhT8LTAAAAAAAAAAO3WIFX9QGQB2ytyfKpEzwypGDRgV2Ka-RtleouFsNbyj")
+# db_handler = DropboxHandler("tNRzKhT8LTAAAAAAAAAAO3WIFX9QGQB2ytyfKpEzwypGDRgV2Ka-RtleouFsNbyj")
 # db_handler.upsert_file("test.dms", "test.dms", "/test.dms")
 # db_handler.download_file("test.dms", "test.dms")
 # db_handler = DropboxHandler()
