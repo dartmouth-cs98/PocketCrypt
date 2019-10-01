@@ -385,12 +385,12 @@ class FSManager:
 			cloudHandler = GoogleDriveHandler()
 
 		elif cloudService == 'dropbox':
-
 			# get access token if exists
-			accessToken = self.getSetting( 'dbAccessToken' )
-			if accessToken is None:
-				print( "> Initializing dropbox for first time")
-			cloudHandler = DropboxHandler( accessToken )
+			# accessToken = self.getSetting( 'dbAccessToken' )
+			# if accessToken is None:
+				# print( "> Initializing dropbox for first time")
+			# cloudHandler = DropboxHandler( accessToken )
+			cloudHandler = DropboxHandler()
 			
 			# update saved access code
 			self.setSetting( 'dbAccessCode', cloudHandler.access_token )

@@ -104,6 +104,8 @@ class GoogleDriveHandler():
 					found = True
 					f_id = file.get('id')
 					break
+		except Exception as e:
+			print( e )
 		if f_id != None:
 			try:
 				request = self.service.files().get_media(fileId=f_id)
@@ -134,6 +136,8 @@ class GoogleDriveHandler():
 					found = True
 					f_id = file.get('id')
 					break
+		except Exception as e:
+			print( e )
 		if f_id != None:
 			try:
 				self.service.files().delete(fileId=f_id).execute()
@@ -161,11 +165,11 @@ class GoogleDriveHandler():
 			print(e)
 			return None
 
-gd_handler = GoogleDriveHandler()
+# gd_handler = GoogleDriveHandler()
 # file_id = gd_handler.upload_file("test.dms", "test.dms")
 # new_file_id = gd_handler.upsert_file("test.dms", "test.dms")
 # file_id = gd_handler.upload_file("test.dms", "test.dms")
-print(gd_handler.download_file(new_file_id, "new_test.dms"))
+# print(gd_handler.download_file(new_file_id, "new_test.dms"))
 # gd_handler.create_new_folder("helloworld")
 # print(gd_handler.delete_file(file_id))
 
