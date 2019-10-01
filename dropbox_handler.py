@@ -71,12 +71,20 @@ class DropboxHandler():
 	Given a file, upload it to dbx
 	'''
 	def upsert_file(self, file_name, local_path, dbx_path):
-		found = False
+		pc_found = False
+		for entry in self.retrieve_all_files():
+			if entry.name == "PocketCrypt":
+				pc_found = True
+		if not pc_found:
+			print("> Could not find PocketCrypt folder; creating new folder called PocketCrypt.")
+			self.create_new_folder("/PocketCrypt")
+			
+		f_found = False
 		try:
 			for entry in self.retrieve_all_files('/PocketCrypt'):
 				if entry.name == file_name:
-					found = True
-			if not found:	# not found - just write file
+					f_found = True
+			if not f_found:	# not found - just write file
 				print("> File not found. Uploading now...")
 				self.upload_file(local_path, dbx_path)
 			else:	# exists - delete then re-upload
@@ -139,8 +147,8 @@ class DropboxHandler():
 			print(e)
 			return None
 
-# db_handler = DropboxHandler("tNRzKhT8LTAAAAAAAAAAOHAOnVraXfO_AqMn_xsR-WBnk8w7FtVMdm3yoarsN-73")
-# db_handler.upsert_file("test.dms", "test.dms", "/test.dms")
+db_handler = DropboxHandler("tNRzKhT8LTAAAAAAAAAAOHAOnVraXfO_AqMn_xsR-WBnk8w7FtVMdm3yoarsN-73")
+db_handler.upsert_file("test.dms", "test.dms", "/test.dms")
 # db_handler.download_file("test.dms", "test.dms")
 # db_handler = DropboxHandler()
 # db_handler.upload_file("ee07a22a2938efcd83cf4abd4c412007.dms", "/ee07a22a2938efcd83cf4abd4c412007.dms")
