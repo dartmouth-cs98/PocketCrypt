@@ -9,13 +9,8 @@ class DropboxHandler():
 	'''
 	Authenticates user, grabs access token, and creates new dbx object
 	'''
-	def __init__(self, db_access_token=None):
-		try:
-			self.access_token = db_access_token
-			self.dbx = dropbox.Dropbox(db_access_token)
-			print("> DropboxHandler initiated!")
-		except Exception as e:
-			print("> Access token invalid.")
+	def __init__(self, db_access_token):
+		if db_access_token == None:
 			try:
 				auth_flow = dropbox.oauth.DropboxOAuth2FlowNoRedirect(APP_KEY, APP_SECRET)	# request user input
 				authorize_url = auth_flow.start()
@@ -30,6 +25,28 @@ class DropboxHandler():
 			except Exception as e:
 				print("> Error initializing DropboxHandler.")
 				print(e)
+		else:
+			try:
+				self.access_token = db_access_token
+				self.dbx = dropbox.Dropbox(db_access_token)
+				print("> DropboxHandler initiated!")
+				if self.retrieve_all_files() == None:
+					try:
+						auth_flow = dropbox.oauth.DropboxOAuth2FlowNoRedirect(APP_KEY, APP_SECRET)	# request user input
+						authorize_url = auth_flow.start()
+						print("> 1. Go to: " + authorize_url)
+						print ("> 2. Click \"Allow\" (you might have to log in first).")
+						print (">. 3. Copy the authorization code.")
+						auth_code = input("> Enter the authorization code here: ").strip()
+						oauth_result = auth_flow.finish(auth_code)
+						self.access_token = oauth_result.access_token	# initialize access token
+						print(self.access_token)
+						self.dbx = dropbox.Dropbox(self.access_token)	# create dbx w/ token
+					except Exception as e:
+						print("> Error initializing DropboxHandler.")
+						print(e)
+			except Exception as e:
+				print("> Something went wrong.")
 
 	'''
 	Retrieve all filenames as a list
@@ -78,7 +95,7 @@ class DropboxHandler():
 		if not pc_found:
 			print("> Could not find PocketCrypt folder; creating new folder called PocketCrypt.")
 			self.create_new_folder("/PocketCrypt")
-			
+
 		f_found = False
 		try:
 			for entry in self.retrieve_all_files('/PocketCrypt'):
@@ -147,8 +164,8 @@ class DropboxHandler():
 			print(e)
 			return None
 
-db_handler = DropboxHandler("tNRzKhT8LTAAAAAAAAAAOHAOnVraXfO_AqMn_xsR-WBnk8w7FtVMdm3yoarsN-73")
-db_handler.upsert_file("test.dms", "test.dms", "/test.dms")
+db_handler = DropboxHandler("tNRzKhT8LTAAAAAAAAAAO3WIFX9QGQB2ytyfKpEzwypGDRgV2Ka-RtleouFsNbyj")
+# db_handler.upsert_file("test.dms", "test.dms", "/test.dms")
 # db_handler.download_file("test.dms", "test.dms")
 # db_handler = DropboxHandler()
 # db_handler.upload_file("ee07a22a2938efcd83cf4abd4c412007.dms", "/ee07a22a2938efcd83cf4abd4c412007.dms")
