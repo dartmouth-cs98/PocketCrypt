@@ -3,7 +3,11 @@
 from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
+from google.oauth2.credentials import Credentials
+from google.auth.transport.requests import Request
 import io
+import os.path
+import pickle
 
 SCOPES = ['https://www.googleapis.com/auth/drive']
 
@@ -11,15 +15,28 @@ class GoogleDriveHandler():
 
 	'''
 	Initialize the GoogleDrive connection, build
+	Following the quickstart tutorial at
+	https://developers.google.com/drive/api/v3/quickstart/python
 	'''
 	def __init__(self):
+		self.creds = None
 		try:
-			flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
-			self.creds = flow.run_local_server()
+			if os.path.exists('token.pickle'):	# token.pickle stores user's access info
+				with open('token.pickle', 'rb') as access_token:
+					self.creds = pickle.load(access_token)
+			if self.creds == None or not self.creds.valid:
+				if self.creds != None and self.creds.expired and self.creds.refresh_token != None:
+					self.creds.refresh(Request())
+				else:
+					flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
+					self.creds = flow.run_local_server()
+				with open('token.pickle', 'wb') as access_token:
+					pickle.dump(self.creds, access_token)
+
 			self.service = build('drive', 'v3', credentials=self.creds)
 		except Exception as e:
 			print("> Error initializing GoogleDriveHandler.")
-			print(e)
+			print(e)		
 
 	'''
 	Upload a file to GoogleDrive
@@ -80,7 +97,8 @@ class GoogleDriveHandler():
 			print(e)
 			return None
 
-# gd_handler = GoogleDriveHandler()
+gd_handler = GoogleDriveHandler()
+gd_handler.create_new_folder("why")
 # file_id = gd_handler.upload_file("ee07a22a2938efcd83cf4abd4c412007.dms", "ee07a22a2938efcd83cf4abd4c412007.dms")
 # print(gd_handler.download_file(file_id, "test.dms"))
 # gd_handler.create_new_folder("helloworld")
