@@ -93,34 +93,56 @@ class GoogleDriveHandler():
 	'''
 	Download a file from GoogleDrive
 	'''
-	def download_file(self, file_id, file_name):
+	def download_file(self, file_name):
+		found = False
+		f_id = None
+		query_string = "name = '" + str(file_name) + "'"
 		try:
-			request = self.service.files().get_media(fileId=file_id)
-			fh = io.FileIO(file_name, 'wb')
-			downloader = MediaIoBaseDownload(fh, request)
-			done = False
-			while done == False:
-			    status, done = downloader.next_chunk()
-			    print("Download " + str(int(status.progress() * 100)) + "%.")
-			print("> File downloaded to device.")
-			return True
-		except Exception as e:
-			print("> Error downloading file from Google Drive.")
-			print(e)
-			return False
+			response = self.service.files().list(q=query_string, spaces='drive', fields='nextPageToken, files(id, name)').execute()
+			for file in response.get('files', []):
+				if file.get('name') == str(file_name):
+					found = True
+					f_id = file.get('id')
+					break
+		if f_id != None:
+			try:
+				request = self.service.files().get_media(fileId=f_id)
+				fh = io.FileIO(file_name, 'wb')
+				downloader = MediaIoBaseDownload(fh, request)
+				done = False
+				while done == False:
+				    status, done = downloader.next_chunk()
+				    print("Download " + str(int(status.progress() * 100)) + "%.")
+				print("> File downloaded to device.")
+				return True
+			except Exception as e:
+				print("> Error downloading file from Google Drive.")
+				print(e)
+				return False
 
 	'''
 	Delete a file on GoogleDrive
 	'''	
-	def delete_file(self, file_id):
+	def delete_file(self, file_name):
+		found = False
+		f_id = None
+		query_string = "name = '" + str(file_name) + "'"
 		try:
-			self.service.files().delete(fileId=file_id).execute()
-			print("> File deleted from Google Drive.")
-			return True
-		except Exception as e:
-			print("> Error deleting file from Google Drive.")
-			print(e)
-			return False
+			response = self.service.files().list(q=query_string, spaces='drive', fields='nextPageToken, files(id, name)').execute()
+			for file in response.get('files', []):
+				if file.get('name') == str(file_name):
+					found = True
+					f_id = file.get('id')
+					break
+		if f_id != None:
+			try:
+				self.service.files().delete(fileId=f_id).execute()
+				print("> File deleted from Google Drive.")
+				return True
+			except Exception as e:
+				print("> Error deleting file from Google Drive.")
+				print(e)
+				return False
 
 	'''
 	Create new folder in GoogleDrive
@@ -139,11 +161,11 @@ class GoogleDriveHandler():
 			print(e)
 			return None
 
-# gd_handler = GoogleDriveHandler()
+gd_handler = GoogleDriveHandler()
 # file_id = gd_handler.upload_file("test.dms", "test.dms")
 # new_file_id = gd_handler.upsert_file("test.dms", "test.dms")
 # file_id = gd_handler.upload_file("test.dms", "test.dms")
-# print(gd_handler.download_file(new_file_id, "new_test.dms"))
+print(gd_handler.download_file(new_file_id, "new_test.dms"))
 # gd_handler.create_new_folder("helloworld")
 # print(gd_handler.delete_file(file_id))
 
