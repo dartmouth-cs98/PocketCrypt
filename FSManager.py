@@ -500,7 +500,7 @@ class FSManager:
 			if cloudService == 'drive':
 				res = cloudHandler.download_file( uuid )
 			elif cloudService == 'dropbox':
-				res = cloudHandler.download_file( "crypt/", uuid )
+				res = cloudHandler.download_file( "crypt/{}".format( uuid ), uuid )
 		else:
 			print( "> Error: Unrecognized cloud service" )
 			return
