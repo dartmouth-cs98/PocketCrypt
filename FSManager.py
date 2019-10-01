@@ -501,9 +501,9 @@ class FSManager:
 				res = cloudHandler.download_file( uuid )
 			elif cloudService == 'dropbox':
 				res = cloudHandler.download_file( "crypt/{}".format( uuid ), uuid )
-		else:
-			print( "> Error: Unrecognized cloud service" )
-			return
+			else:
+				print( "> Error: Unrecognized cloud service" )
+				return
 			
 			if res is not None:
 				print("> Download successful." )
