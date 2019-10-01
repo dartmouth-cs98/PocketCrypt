@@ -1,6 +1,6 @@
 import json
 import random
-import msvcrt
+# import msvcrt
 import os
 import shutil
 from datetime import datetime
@@ -13,6 +13,7 @@ from dropbox_handler import DropboxHandler
 
 # helper function to see if 'q' is in keyboard buffer
 def qInBuffer():
+	return True
 	while msvcrt.kbhit(): # exists letters in keyboard buffer
 		if msvcrt.getch().decode() == 'q': # pop a letter
 			return True
@@ -424,7 +425,7 @@ class FSManager:
 			if cloudService == 'drive':
 				res = cloudHandler.upsert_file( uuid, "C:/Users/IAMFRANK/Documents/Workspace/cs98/crypt" )
 			else:
-				res = cloudHandler.upsert_file( uuid, "crypt/", uuid )
+				res = cloudHandler.upsert_file( uuid, "crypt/{}".format( uuid ), uuid )
 			if res is not None:
 				print("> Upload successful." )
 			else:
