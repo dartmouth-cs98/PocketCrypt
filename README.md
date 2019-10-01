@@ -4,24 +4,21 @@ PocketCrypt is a file encryption manager that allows you to keep encrypted copie
 
 PocketCrypt works by allowing you to create and manage different File Systems. Each File System can 'watch' different files, and all files under a specific file system will be encrypted under the same cryptographic key. No need to worry about the encryption, all that is taken care of behind the scenes!
 
+When you're reading to push a filesystem to the cloud, you can do so with the 'push' command, like Git.
 
-We'll start by launching the program interface.
-```
-$ python fileManagerCMD.py
-> Initializing metadata file.
-> Awaiting command...
-```
-You can quit this program interface at any time using 'q'. Don't worry, all your data is saved in a metadata file.
 
 ### Create a File System
-First thing we should do is create a File System.
+We'll start by creating a File System.
 ```
-> Awaiting command...
-create myfs
+$ python fileManagerCMD.py create myfs -e
+> Initialized PocketCrypt with metadata file: 'metadata.json'
 > File system 'myfs' created.
+> Equipped 'myfs'
+
 ```
 
-Remember, you can view all existing File Systems and their metadata with the `show all systems` command.
+That little `-e` or `--equip` flag we included means the file system will automatically be equipped after creation. If we forget to add it, we can always equip a fileystem using the `equip` command.
+Remember, you can view all existing File Systems and their metadata with the `show` command with the `-a` or `--all` flag.
 
 ### Add a File to a File System
 Now that we have a File System, we need to tell it which files it will be in charge of. Let's create some files!
@@ -31,14 +28,13 @@ echo "Hello World!" > myFile.txt
 echo "foobar" > anotherFile.txt
 ```
 
-Now we can add them to our File System we created.
+Now we can add them to our File System we created. The `add` command will always add files to the currently equipped system. If you forget what's equipped, just use the `show` command.
 
 ```
-> Awaiting command...
-add myFile.txt to myfs
+$ python fileManagerCMD.py add myFile.txt
 > File 'myFile.txt' added to system 'myfs'.
-> Awaiting command...
-add anotherFile.txt to myfs
+
+$ python fileManagerCMD.py add anotherFile.txt
 > File 'anotherFile.txt' added to system 'myfs'.
 ```
 
@@ -48,22 +44,19 @@ If you want to remove a file from your filesystem, use the `remove` command.
 With all the relevent files added to our File System, we can encrypt it for the first time.
 
 ```
-> Awaiting command...
-encrypt myfs
-> File 'myFile.txt' encrypted as '859fbe69f3dbd2cf35be8ba9aa047d05' using key 'GEhRTS1WLlPnlw0FgAGRWuHEY7ZWIwTqCzvu6joK7Ec='.
-> File 'anotherFile.txt' encrypted as 'acdfa5354379904cfd65b29915fc0c60' using key 'GEhRTS1WLlPnlw0FgAGRWuHEY7ZWIwTqCzvu6joK7Ec='.
+$ python fileManagerCMD.py encrypt
+> File 'myFile.txt' encrypted as '9908193f63bad15e30df4f32988f0211' using key 'qjpwf4AofCjJBa4exHJTm1V-WBs36F-DUWfhrpqXuwg='.
+> File 'anotherFile.txt' encrypted as 'fe5c3abd0924a20fab46b3ccf3ff004e' using key 'qjpwf4AofCjJBa4exHJTm1V-WBs36F-DUWfhrpqXuwg='.
 ```
-You'll notice that a folder `crypt` has been created. This is where all the encrypted files live. Open it up! Notice how all the file names are unrecognizable? That's because each file that's encrypted is given a random hash. Don't worry, though, PocketCrypt knows which is which.
+You'll notice that a folder `crypt` has been created. This is where all the encrypted files live (locally). Open it up! Notice how all the file names are unrecognizable? That's because each file that's encrypted is given a random hash. Don't worry, though, PocketCrypt knows which is which.
 
 ### Update a File System
-Let's make a change to `myFile.txt`. Now the new version is out of date with the encrypted version! We have to update the encrypted version too.
+Let's make a change to `myFile.txt`. Now the new version is out of date with the encrypted version! We have to update the locally encrypted version too.
 ```
 $ echo "Added this part." >> myFile.txt
-$ python fileManagerCMD.py
-> Awaiting command...
-update myfs
+$ python fileManagerCMD.py update
 > Change detected in 'myFile.txt', re-encrypting file.
-> File 'myFile.txt' encrypted as '859fbe69f3dbd2cf35be8ba9aa047d05' using key 'GEhRTS1WLlPnlw0FgAGRWuHEY7ZWIwTqCzvu6joK7Ec='.
+> File 'myFile.txt' encrypted as '9908193f63bad15e30df4f32988f0211' using key 'qjpwf4AofCjJBa4exHJTm1V-WBs36F-DUWfhrpqXuwg='.
 ```
 
 Notice how it uses the same key to encrypt and it re-encrypts under the same file name as previously. No wasted space!
@@ -71,46 +64,61 @@ Notice how it uses the same key to encrypt and it re-encrypts under the same fil
 ### Watch a File System
 Who wants to manually use the `update` command?? Nobody! By using the `watch` command, you can edit your files in your File System and they will automatically be backed up into your crypt.
 ```
-> Awaiting command...
-watch myfs
-
+$ python fileManagerCMD.py watch
 ```
 Now all the files in 'myfs' are being monitored. Make a change to a file and see what happens.
 ```
-> Change detected in 'anotherFile.txt', re-encrypting file.
-> File 'anotherFile.txt' encrypted as 'acdfa5354379904cfd65b29915fc0c60' using key 'GEhRTS1WLlPnlw0FgAGRWuHEY7ZWIwTqCzvu6joK7Ec='.
+> Change detected in 'myFile.txt', re-encrypting file.
+> File 'myFile.txt' encrypted as '9908193f63bad15e30df4f32988f0211' using key 'qjpwf4AofCjJBa4exHJTm1V-WBs36F-DUWfhrpqXuwg='.
 
 ```
 Convenient! Conclude the watching process by tapping 'q'.
 
-### Importing an Existing File System
-There's a reason this program is called PocketCrypt. It's like a little pocket for your encrypted files! If you carry around with you your crypt and your metadata file \(you should encrypt this with a password\), then you can decrypt all your files on-the-go.
+### Pushing an Encrypted File System to the Cloud
+Now for the fun part! When you're done editing and encrypting your files, you're gonna want to back them up in the cloud. For now, you can choose from either Dropbox or Google Drive. Let's push our encypted files to Google Drive.
 
-Let's delete the plaintext files.
+```
+$ python fileManagerCMD.py push drive
+> Pushing '9908193f63bad15e30df4f32988f0211' (myFile.txt) to drive
+> Pushing 'fe5c3abd0924a20fab46b3ccf3ff004e' (anotherFile.txt) to drive
+```
+
+Check your Drive. Your encrypted files now live in the "PocketCrypt" folder. They'll just hang out there until they're needed again.
+
+If it happens that you forgot to re-encrypt your files after you made some changes, don't worry, pushing automatically updates your file system too.
+
+### Pulling a File System from the Cloud
+There's a reason this program is called PocketCrypt. It's like a little pocket for your encrypted files! If you carry around with you your crypt and your metadata file \(you should encrypt this with a password\), then you can pull and decrypt all your files on-the-go. We'll start with the `pull` command to localize our encrypted files.
+
+```
+$ python fileManagerCMD.py pull drive
+> Pulling '9908193f63bad15e30df4f32988f0211' (myFile.txt) from drive
+> Pulling 'fe5c3abd0924a20fab46b3ccf3ff004e' (anotherFile.txt) from drive
+```
+
+The crypt files have been updated! Now we can decrypt the file system and we will have our files.
+
+
+### Decrypt a File System from the Crypt
+Now we have to decrypt the encrypted local files.
+
+First, let's delete the plaintext files.
 ```
 $ rm myFile.txt
 $ rm anotherFile.txt
 ```
 
-Starting back up PocketCrypt, we can use the `import` command to get our files back from the crypt!
+Now we can use the `decrypt` command to get our files back from the crypt!
 
 ```
-$ python fileManagerCMD.py 
-> Awaiting command...
-import myfs
-> Creating myFile.txt by decrypting 859fbe69f3dbd2cf35be8ba9aa047d05 with key GEhRTS1WLlPnlw0FgAGRWuHEY7ZWIwTqCzvu6joK7Ec=
-> Creating anotherFile.txt by decrypting acdfa5354379904cfd65b29915fc0c60 with key GEhRTS1WLlPnlw0FgAGRWuHEY7ZWIwTqCzvu6joK7Ec=
-> Awaiting command...
-q
-> Safely quit.
-$ cat myFile.txt
-Hello World!
-Added this part.
-$ cat anotherFile.txt
-foobarz
+$ python fileManagerCMD.py decrypt
+> Creating ./myfs//myFile.txt by decrypting 9908193f63bad15e30df4f32988f0211
+> Creating ./myfs//anotherFile.txt by decrypting fe5c3abd0924a20fab46b3ccf3ff004e
 ```
 
-Pretty sweet, huh! If at any time you need help, type `help` or a specific command into the prompt.
+And there, all files in your file system are now decrypted and available for viewing in the 'myfs' folder.
+
+Pretty sweet, huh! If at any time you need help, type `-h` or `--help`.
 
 
 ## Resources
@@ -124,12 +132,13 @@ Pretty sweet, huh! If at any time you need help, type `help` or a specific comma
 - https://chase-seibert.github.io/blog/2014/03/21/python-multilevel-argparse.html
 
 ## To Do
-- Improve management of how all metadata is loaded into memory each time (use mySQLite)
+- Implement a `pocket` command that encrypts the metadata file using a password and sends it into the cloud for future downloading and decryption instead of having to carry it around with you
 
 ## What'd I Learn?
 - Symmetric encryption in python
 - File management
 - Python stuff in general
+- Local database storage using python-esque JSON databases
 
 ## What Didn't Work?
 - Coding before coming up with a complete plan made it tough, and also made it take longer than I envisioned. The finished product is completely different than what I first envisioned.
