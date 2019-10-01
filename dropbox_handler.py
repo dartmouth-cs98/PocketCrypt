@@ -29,7 +29,7 @@ class DropboxHandler():
 			try:
 				self.access_token = db_access_token
 				self.dbx = dropbox.Dropbox(db_access_token)
-				print("> DropboxHandler initiated!")
+				# print("> DropboxHandler initiated!")
 				if self.retrieve_all_files() == None:
 					try:
 						auth_flow = dropbox.oauth.DropboxOAuth2FlowNoRedirect(APP_KEY, APP_SECRET)	# request user input
@@ -77,7 +77,7 @@ class DropboxHandler():
 				dbx_path = '/PocketCrypt/' + dbx_path
 			with open(f, 'rb') as b_file:
 				self.dbx.files_upload(b_file.read(), dbx_path)
-			print("> File uploaded to Dropbox.")
+			# print("> File uploaded to Dropbox.")
 			return True
 		except Exception as e:
 			print("> Error uploading file to Dropbox.")
@@ -157,7 +157,7 @@ class DropboxHandler():
 			if dbx_path[0] != '/PocketCrypt/':
 				dbx_path = '/PocketCrypt/' + dbx_path
 			response = self.dbx.files_download_to_file(to_local_path, dbx_path)
-			print("> File downloaded onto device.")
+			# print("> File downloaded onto device.")
 			return response
 		except Exception as e:
 			print("> Error downloading file from Dropbox to " + str(to_local_path))

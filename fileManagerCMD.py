@@ -53,7 +53,7 @@ class PocketCrypt():
 					print ( "> Unable to create metadata file." )
 
 		self.fsm = FSManager( metadataAddr )
-		print( "> Initialized PocketCrypt with metadata file: '{}'".format( metadataAddr ))
+		# print( "> Initialized PocketCrypt with metadata file: '{}'".format( metadataAddr ))
 
 		parser = argparse.ArgumentParser( description='PocketCrypt!', usage='''pc <command> [<args>]''')
 		parser.add_argument( 'command', help='Subcommand to run' )

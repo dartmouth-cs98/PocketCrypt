@@ -378,23 +378,19 @@ class FSManager:
 	# push encrypted files for equipped file system to cloud backup service
 	def pushEquippedFileSystem( self, cloudService ):
 
-		# update file system
-		self.encryptEquippedFileSystem( True )
-
 		# initialize chosen session
 		if cloudService == 'drive':
 			cloudHandler = GoogleDriveHandler()
 
 		elif cloudService == 'dropbox':
 			# get access token if exists
-			# accessToken = self.getSetting( 'dbAccessToken' )
-			# if accessToken is None:
-				# print( "> Initializing dropbox for first time")
-			# cloudHandler = DropboxHandler( accessToken )
-			cloudHandler = DropboxHandler()
+			accessToken = self.getSetting( 'dbAccessToken' )
+			if accessToken is None:
+				print( "> Initializing dropbox for first time")
+			cloudHandler = DropboxHandler( accessToken )
 			
 			# update saved access code
-			self.setSetting( 'dbAccessCode', cloudHandler.access_token )
+			self.setSetting( 'dbAccessToken', cloudHandler.access_token )
 		else:
 			print( "> Error: Unrecognized cloud service" )
 			return
@@ -416,14 +412,12 @@ class FSManager:
 			print( "> No encrypted files to push! Encrypt the equipped filesystem using the 'encrypt' command." )
 			return
 
-		print( fileUUIDs )
-
 		# push and timestamp (seconds) each file being pushed
 		for fileName, uuid in fileUUIDs.items():
 
 			# push file
 			if cloudService == 'drive':
-				res = cloudHandler.upsert_file( uuid, "C:/Users/IAMFRANK/Documents/Workspace/cs98/crypt" )
+				res = cloudHandler.upsert_file( uuid, "crypt/" )
 			else:
 				res = cloudHandler.upsert_file( uuid, "crypt/{}".format( uuid ), uuid )
 			if res is not None:
@@ -433,7 +427,6 @@ class FSManager:
 				return
 
 			filesInfo[ fileName ][ 'pushed' ] = round( time.time() )
-			print( "> Pushing '{}' ({}) to {}".format( uuid, fileName, cloudService ) )
 
 		# update the database
 		systems = self.db.table( 'systems' )
@@ -448,14 +441,14 @@ class FSManager:
 
 		elif cloudService == 'dropbox':
 			# get access token if exists
-			# accessToken = self.getSetting( 'dbAccessToken' )
-			# if accessToken is None:
-				# print( "> Initializing dropbox for first time")
-			# cloudHandler = DropboxHandler( accessToken )
-			cloudHandler = DropboxHandler()
+			accessToken = self.getSetting( 'dbAccessToken' )
+			if accessToken is None:
+				print( "> Initializing dropbox for first time")
+			cloudHandler = DropboxHandler( accessToken )
 			
 			# update saved access code
-			self.setSetting( 'dbAccessCode', cloudHandler.access_token )
+			self.setSetting( 'dbAccessToken', cloudHandler.access_token )
+
 		else:
 			print( "> Error: Unrecognized cloud service" )
 			return
@@ -513,7 +506,7 @@ class FSManager:
 
 			# timestamp with pulled time
 			filesInfo[ fileName ][ 'pulled' ] = round( time.time() )
-			print( "> Pulling '{}' ({}) from {}".format( uuid, fileName, cloudService ) )
+			print( "> Successfully '{}' ({}) from {}. Decrypt the filesystem to import it from the crypt.".format( uuid, fileName, cloudService ) )
 
 		# update the database
 		systems = self.db.table( 'systems' )
